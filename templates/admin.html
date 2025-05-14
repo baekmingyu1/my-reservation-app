@@ -2,15 +2,32 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>관리자 - 예약 현황</title>
+    <title>예약 현황 - 관리자</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        h2 { color: #333; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
 </head>
 <body>
-<h2>전체 예약 목록</h2>
-<ul>
+<h2>📋 전체 예약 현황</h2>
+<table>
+    <tr>
+        <th>시간</th>
+        <th>인원 수</th>
+        <th>예약자</th>
+    </tr>
     {% for r in reservations %}
-        <li>{{ r.timeslot }} - {{ r.name }}</li>
+        <tr>
+            <td>{{ r.timeslot }}</td>
+            <td>{{ r.count }}</td>
+            <td>{{ r.names }}</td>
+        </tr>
     {% endfor %}
-</ul>
-<a href="/">← 메인으로</a>
+</table>
+<br>
+<a href="/logout">로그아웃</a>
 </body>
 </html>
