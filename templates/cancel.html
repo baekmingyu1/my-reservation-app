@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>예약 취소</title>
+</head>
+<body>
+<h2>예약 취소</h2>
+<form method="post">
+    이름: <input type="text" name="name" required><br>
+    시간대: <input type="text" name="timeslot" required><br>
+    <button type="submit">취소하기</button>
+</form>
+{% if message %}
+    <p>{{ message }}</p>
+{% endif %}
+<a href="/">← 메인으로</a>
+</body>
+</html>

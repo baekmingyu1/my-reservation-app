@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>내 예약</title>
+</head>
+<body>
+<h2>내 예약 확인</h2>
+<form method="post">
+    이름: <input type="text" name="name" required>
+    <button type="submit">조회</button>
+</form>
+{% if reservations %}
+    <ul>
+        {% for r in reservations %}
+            <li>{{ r.timeslot }} - 예약 시간</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+<a href="/">← 메인으로</a>
+</body>
+</html>
