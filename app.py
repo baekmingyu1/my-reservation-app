@@ -176,19 +176,25 @@ def admin():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
+    # ✅ POST 요청이면 완료 체크 처리
     if request.method == 'POST':
         ids = request.form.getlist('used_ids')
         cur.execute("UPDATE reservations SET used = FALSE")
         if ids:
-            cur.execute("UPDATE reservations SET used = TRUE WHERE id = ANY(%s)", (list(map(int, ids)),))
+            cur.execute(
+                "UPDATE reservations SET used = TRUE WHERE id = ANY(%s)",
+                (list(map(int, ids)),)
+            )
         conn.commit()
 
+    # ✅ 예약자 전체 목록 정렬 후 그룹핑
     cur.execute("SELECT * FROM reservations ORDER BY timeslot, created_at")
     rows = cur.fetchall()
     grouped = {}
     for row in rows:
         grouped.setdefault(row['timeslot'], []).append(row)
 
+    # ✅ 예약 오픈 시간 조회 (dict형 row['value']로 접근)
     cur.execute("SELECT value FROM settings WHERE key = 'reservation_open_time'")
     row = cur.fetchone()
     open_time = row['value'] if row else "설정 안 됨"
@@ -196,6 +202,7 @@ def admin():
     cur.close()
     conn.close()
     return render_template('admin.html', grouped=grouped, open_time=open_time)
+
 
 @app.route('/admin/set_open_time', methods=['POST'])
 @login_required
