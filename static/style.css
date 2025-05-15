@@ -167,13 +167,13 @@ body {
     margin-top: 4px;
 }
 
-@media (min-width: 768px) {
-    .input-wrapper {
-        flex-wrap: nowrap;
-    }
-}
-@media (max-width: 767px) {
-    .input-wrapper {
-        flex-wrap: wrap;
-    }
-}
+/*@media (min-width: 1000px) {*/
+/*    .input-wrapper {*/
+/*        flex-wrap: nowrap;*/
+/*    }*/
+/*}*/
+/*@media (max-width: 1000px) {*/
+/*    .input-wrapper {*/
+/*        flex-wrap: wrap;*/
+/*    }*/
+/*}*/

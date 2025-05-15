@@ -65,7 +65,8 @@ def generate_timeslots():
     for t in all_slots:
         if datetime(2025, 5, 25, 11, 0) <= t < datetime(2025, 5, 25, 12, 30):
             continue
-        times.append(t.strftime('%Y-%m-%d %H:%M'))
+        formatted = t.strftime('%Y-%m-%d %H:%M')
+        times.append(formatted)
     return times
 
 # --- Index ---
@@ -119,28 +120,32 @@ def load_slots_with_counts(cur):
     slots = []
     slot_counts = {}
     for t in generate_timeslots():
-        # 오전은 '밖'으로만 처리
-        if t < '2025-05-25 12:30':
+        is_morning = datetime.strptime(t[:16], '%Y-%m-%d %H:%M') < datetime(2025, 5, 25, 12, 30)
+        base_time = t[:16]
+        if is_morning:
             cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t,))
             out_count = cur.fetchone()['count'] if cur.rowcount else 0
-            in_count = 0  # 오전은 안쪽 예약 없음
+            in_count = 0
         else:
             cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (안)",))
             in_count = cur.fetchone()['count'] if cur.rowcount else 0
             cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (밖)",))
             out_count = cur.fetchone()['count'] if cur.rowcount else 0
 
-        slot_counts[t] = {
+        slot_counts[base_time] = {
             "in": {"reserved": in_count, "remaining": 3 - in_count},
             "out": {"reserved": out_count, "remaining": 3 - out_count}
         }
 
         total_reserved = in_count + out_count
-        total_limit = 3 if t < '2025-05-25 12:30' else 6
+        total_limit = 3 if is_morning else 6
         total_remaining = max(0, total_limit - total_reserved)
 
+        label = t if not is_morning else t + " (밖)"
+
         slots.append({
-            'time': t,
+            'time': base_time,
+            'label': label,
             'count': total_reserved,
             'full': total_reserved >= total_limit,
             'remaining': total_remaining,
@@ -150,8 +155,6 @@ def load_slots_with_counts(cur):
     return slots, slot_counts
 
 # --- 나머지 라우트는 동일 ---
-
-
 
 
 # --- 내 예약 확인 ---
