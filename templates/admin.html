@@ -3,12 +3,14 @@
 
 {% block content %}
     <h2>관리자 예약 현황</h2>
+
     <form method="post">
         <div style="margin-bottom: 10px">
             <label>예약 오픈 시간: </label>
             <input name="open_time" type="datetime-local" value="{{ open_time }}">
             <button type="submit" name="action" value="set_open">저장</button>
         </div>
+
         <div style="margin-bottom: 10px">
             <label>이름:</label>
             <input name="admin_name" placeholder="이름 입력">
@@ -16,70 +18,75 @@
             <input name="admin_time" placeholder="예: 2025-05-25 10:30 (안)">
             <button type="submit" name="action" value="add_reservation">예약 추가</button>
         </div>
-        <div>
+
+        <div style="margin-bottom: 10px">
             <button type="submit" name="action" value="reset_used">이용완료 전체 초기화</button>
         </div>
     </form>
 
+    <hr>
+
     <h3>🔵 안쪽 예약</h3>
-    <table border="1" cellpadding="5" style="margin-top: 10px; border-collapse: collapse;">
-        <tr>
-            <th>시간</th>
-            <th>예약자</th>
-            <th>번호</th>
-            <th>이용 완료</th>
-            <th>삭제</th>
-        </tr>
-        {% for r in reservations if '(안)' in r.timeslot %}
+    {% for time, slots in grouped.items() if '(안)' in time %}
+        <table border="1" cellpadding="5" style="margin-bottom: 20px; border-collapse: collapse;">
+            <caption style="font-weight: bold; margin-bottom: 5px;">🕒 {{ time }}</caption>
             <tr>
-                <td>{{ r.timeslot }}</td>
-                <td>{{ r.name }}</td>
-                <td>{{ r.order_in_slot }}</td>
-                <td>
-                    <form method="post" action="/admin/toggle_used" style="display:inline;">
-                        <input type="hidden" name="id" value="{{ r.id }}">
-                        <button>{{ "✅" if r.used else "❌" }}</button>
-                    </form>
-                </td>
-                <td>
-                    <form method="post" action="/admin/delete_reservation" style="display:inline;">
-                        <input type="hidden" name="reservation_id" value="{{ r.id }}">
-                        <button type="submit">삭제</button>
-                    </form>
-                </td>
+                <th>예약자</th>
+                <th>번호</th>
+                <th>이용 완료</th>
+                <th>삭제</th>
             </tr>
-        {% endfor %}
-    </table>
+            {% for r in slots %}
+                <tr>
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.order_in_slot }}</td>
+                    <td>
+                        <form method="post" action="/admin/toggle_used" style="display:inline;">
+                            <input type="hidden" name="id" value="{{ r.id }}">
+                            <button>{{ "✅" if r.used else "❌" }}</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" action="/admin/delete_reservation" style="display:inline;">
+                            <input type="hidden" name="reservation_id" value="{{ r.id }}">
+                            <button type="submit">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
 
     <h3>🟢 바깥쪽 예약</h3>
-    <table border="1" cellpadding="5" style="margin-top: 10px; border-collapse: collapse;">
-        <tr>
-            <th>시간</th>
-            <th>예약자</th>
-            <th>번호</th>
-            <th>이용 완료</th>
-            <th>삭제</th>
-        </tr>
-        {% for r in reservations if '(밖)' in r.timeslot or '(안)' not in r.timeslot %}
+    {% for time, slots in grouped.items() if '(밖)' in time or '(안)' not in time %}
+        <table border="1" cellpadding="5" style="margin-bottom: 20px; border-collapse: collapse;">
+            <caption style="font-weight: bold; margin-bottom: 5px;">🕒 {{ time }}</caption>
             <tr>
-                <td>{{ r.timeslot }}</td>
-                <td>{{ r.name }}</td>
-                <td>{{ r.order_in_slot }}</td>
-                <td>
-                    <form method="post" action="/admin/toggle_used" style="display:inline;">
-                        <input type="hidden" name="id" value="{{ r.id }}">
-                        <button>{{ "✅" if r.used else "❌" }}</button>
-                    </form>
-                </td>
-                <td>
-                    <form method="post" action="/admin/delete_reservation" style="display:inline;">
-                        <input type="hidden" name="reservation_id" value="{{ r.id }}">
-                        <button type="submit">삭제</button>
-                    </form>
-                </td>
+                <th>예약자</th>
+                <th>번호</th>
+                <th>이용 완료</th>
+                <th>삭제</th>
             </tr>
-        {% endfor %}
-    </table>
+            {% for r in slots %}
+                <tr>
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.order_in_slot }}</td>
+                    <td>
+                        <form method="post" action="/admin/toggle_used" style="display:inline;">
+                            <input type="hidden" name="id" value="{{ r.id }}">
+                            <button>{{ "✅" if r.used else "❌" }}</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" action="/admin/delete_reservation" style="display:inline;">
+                            <input type="hidden" name="reservation_id" value="{{ r.id }}">
+                            <button type="submit">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
 
     <a class="action-link" href="/">← 메인으로</a>
 {% endblock %}

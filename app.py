@@ -226,36 +226,68 @@ def admin():
 
     action = request.form.get("action")
 
-    if action == "reset_used":
-        cur.execute("UPDATE reservations SET used = FALSE")
-    elif action == "set_open":
-        open_time = request.form.get("open_time")
-        cur.execute("""
-                    INSERT INTO settings (key, value) VALUES ('open_time', %s)
-                        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-                    """, (open_time,))
-    elif action == "add_reservation":
-        name = request.form.get("admin_name")
-        timeslot = request.form.get("admin_time")
-        if name and timeslot:
-            cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
-            count = cur.fetchone()[0]
-            if count < 3:
-                order_in_slot = count + 1
-                cur.execute("INSERT INTO reservations (name, timeslot, order_in_slot) VALUES (%s, %s, %s)",
-                            (name, timeslot, order_in_slot))
-    conn.commit()
+    # ✅ POST 처리
+    if request.method == "POST":
+        if action == "reset_used":
+            cur.execute("UPDATE reservations SET used = FALSE")
 
+        elif action == "set_open":
+            open_time_val = request.form.get("open_time")
+            cur.execute("""
+                        INSERT INTO settings (key, value)
+                        VALUES ('open_time', %s)
+                            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                        """, (open_time_val,))
+
+        elif action == "add_reservation":
+            name = request.form.get("admin_name")
+            timeslot = request.form.get("admin_time")
+            if name and timeslot:
+                cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (timeslot,))
+                count = cur.fetchone()['count']
+                if count < 3:
+                    order_in_slot = count + 1
+                    cur.execute("""
+                                INSERT INTO reservations (name, timeslot, order_in_slot)
+                                VALUES (%s, %s, %s)
+                                """, (name, timeslot, order_in_slot))
+
+        conn.commit()
+
+    # ✅ 예약 목록 조회 및 그룹화
     cur.execute("SELECT * FROM reservations ORDER BY timeslot, order_in_slot")
     reservations = cur.fetchall()
 
+    from collections import defaultdict
+    grouped = defaultdict(list)
+    for r in reservations:
+        grouped[r["timeslot"]].append(r)
+
+    # ✅ 오픈 시간 불러오기 및 datetime-local 형식 변환
     cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
     row = cur.fetchone()
-    open_time = row["value"] if row else "설정 안 됨"
+
+    open_time = ""
+    if row and row.get("value"):
+        raw_time = row["value"].strip()
+        try:
+            dt = datetime.strptime(raw_time, "%Y-%m-%d %H:%M")
+            open_time = dt.strftime("%Y-%m-%dT%H:%M")
+        except ValueError:
+            try:
+                dt = datetime.strptime(raw_time, "%Y-%m-%dT%H:%M")
+                open_time = dt.strftime("%Y-%m-%dT%H:%M")
+            except:
+                print("⚠️ 오픈 시간 파싱 실패:", raw_time)
+                open_time = ""
 
     cur.close()
     conn.close()
-    return render_template("admin.html", reservations=reservations, open_time=open_time)
+
+    return render_template("admin.html", grouped=grouped, open_time=open_time)
+
+
+
 
 @app.route("/admin/delete_reservation", methods=["POST"])
 @admin_required
