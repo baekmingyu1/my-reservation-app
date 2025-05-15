@@ -35,10 +35,6 @@
             cursor: pointer;
             margin-left: 6px;
         }
-        select.input-box {
-            min-width: 180px;
-            font-size: 16px;
-        }
     </style>
 {% endblock %}
 
@@ -87,11 +83,7 @@
             <input class="input-box" type="text" name="name" placeholder="이름 입력" required>
         </div>
         <div class="input-wrapper">
-            <select class="input-box" name="timeslot" required>
-                {% for t in timeslots %}
-                    <option value="{{ t }}">{{ t[11:] }}</option>
-                {% endfor %}
-            </select>
+            <input class="input-box" type="text" name="timeslot" placeholder="시간 입력 (예: 2025-05-25 10:30)" required>
         </div>
         <button class="input-box" style="width: auto;">예약 등록</button>
     </form>

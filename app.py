@@ -8,7 +8,6 @@ from pytz import timezone
 from functools import wraps
 import traceback
 
-# 환경변수 로드
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path)
 
@@ -34,39 +33,32 @@ def init_db():
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
-
         cur.execute("""
                     CREATE TABLE IF NOT EXISTS reservations (
                                                                 id SERIAL PRIMARY KEY,
                                                                 name TEXT NOT NULL,
                                                                 timeslot TEXT NOT NULL,
-                                                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                                                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                                                used BOOLEAN DEFAULT FALSE
                     );
                     """)
-
-        # ✅ used 컬럼 추가
         cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS used BOOLEAN DEFAULT FALSE;")
-
         cur.execute("""
                     CREATE TABLE IF NOT EXISTS settings (
                                                             key TEXT PRIMARY KEY,
                                                             value TEXT NOT NULL
                     );
                     """)
-
         cur.execute("""
                     INSERT INTO settings (key, value)
                     VALUES ('reservation_open_time', '2025-05-25 09:00')
                         ON CONFLICT (key) DO NOTHING;
                     """)
-
         conn.commit()
         cur.close()
         conn.close()
-        print("✅ DB 초기화 완료")
     except Exception:
         traceback.print_exc()
-
 
 init_db()
 
@@ -102,7 +94,6 @@ def index():
     if request.method == 'POST':
         name = request.form.get('name')
         timeslot = request.form.get('timeslot')
-
         if open_time and now < open_time:
             message = "⏳ 예약이 아직 열리지 않았습니다."
         else:
@@ -180,25 +171,19 @@ def admin():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    # ✅ POST 요청이면 완료 체크 처리
     if request.method == 'POST':
         ids = request.form.getlist('used_ids')
         cur.execute("UPDATE reservations SET used = FALSE")
         if ids:
-            cur.execute(
-                "UPDATE reservations SET used = TRUE WHERE id = ANY(%s)",
-                (list(map(int, ids)),)
-            )
+            cur.execute("UPDATE reservations SET used = TRUE WHERE id = ANY(%s)", (list(map(int, ids)),))
         conn.commit()
 
-    # ✅ 예약자 전체 목록 정렬 후 그룹핑
     cur.execute("SELECT * FROM reservations ORDER BY timeslot, created_at")
     rows = cur.fetchall()
     grouped = {}
     for row in rows:
         grouped.setdefault(row['timeslot'], []).append(row)
 
-    # ✅ 예약 오픈 시간 조회 (dict형 row['value']로 접근)
     cur.execute("SELECT value FROM settings WHERE key = 'reservation_open_time'")
     row = cur.fetchone()
     open_time = row['value'] if row else "설정 안 됨"
@@ -206,7 +191,6 @@ def admin():
     cur.close()
     conn.close()
     return render_template('admin.html', grouped=grouped, open_time=open_time)
-
 
 @app.route('/admin/set_open_time', methods=['POST'])
 @login_required
@@ -224,7 +208,6 @@ def set_open_time():
     conn.close()
     return redirect('/admin')
 
-# 관리자 예약 삭제
 @app.route('/admin/delete_reservation', methods=['POST'])
 @login_required
 def delete_reservation():
@@ -238,31 +221,32 @@ def delete_reservation():
         conn.close()
     return redirect('/admin')
 
-# 관리자 전용 예약
 @app.route('/admin/add_reservation', methods=['POST'])
 @login_required
 def admin_add_reservation():
     name = request.form.get('name')
     timeslot = request.form.get('timeslot')
 
+    try:
+        datetime.strptime(timeslot, "%Y-%m-%d %H:%M")
+    except ValueError:
+        print("❌ 잘못된 시간 형식:", timeslot)
+        return redirect('/admin')
+
     if not name or not timeslot:
         return redirect('/admin')
 
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
-
-    # 이미 해당 이름이 등록되어 있으면 막기
     cur.execute("SELECT COUNT(*) FROM reservations WHERE name = %s", (name,))
     if cur.fetchone()[0] == 0:
         cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
         if cur.fetchone()[0] < 3:
             cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
             conn.commit()
-
     cur.close()
     conn.close()
     return redirect('/admin')
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
