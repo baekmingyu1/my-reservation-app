@@ -5,7 +5,8 @@
     <div class="title">내 예약 확인</div>
 
     <form method="post" class="name-row">
-        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required style="min-width: 180px;">
+        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required
+               value="{{ name or '' }}" style="min-width: 180px;">
         <button class="input-box" style="width: auto;">조회</button>
     </form>
 
@@ -15,7 +16,7 @@
                 <li>
                     {{ r.timeslot }}
                     <form method="post" action="/cancel_reservation" style="display:inline;">
-                        <input type="hidden" name="name" value="{{ r.name }}">
+                        <input type="hidden" name="name" value="{{ name }}">
                         <input type="hidden" name="timeslot" value="{{ r.timeslot }}">
                         <button type="submit" class="delete-btn">취소</button>
                     </form>
