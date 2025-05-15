@@ -28,11 +28,21 @@
 {% block content %}
     <div class="title">전체 예약 현황</div>
     <a class="logout" href="/logout">로그아웃</a>
+
     <table>
         <tr><th>시간대</th><th>예약자 목록</th></tr>
         {% for time, users in grouped.items() %}
             <tr><td>{{ time }}</td><td>{{ users|join(', ') }}</td></tr>
         {% endfor %}
     </table>
+
+    <hr>
+    <div class="title">예약 오픈 시간 설정</div>
+    <p style="font-size: 18px;">현재 설정된 예약 오픈 시간: <strong>{{ open_time }}</strong></p>
+    <form method="post" action="/admin/set_open_time">
+        <input class="input-box" type="text" name="open_time" placeholder="예: 2025-05-25 09:00" required />
+        <button class="input-box" style="width: auto;">저장</button>
+    </form>
+
     <a class="action-link" href="/">← 메인으로</a>
 {% endblock %}
