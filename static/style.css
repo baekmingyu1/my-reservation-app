@@ -160,3 +160,8 @@ body {
     background-color: #b0bec5;
     cursor: not-allowed;
 }
+.slot-full-label {
+    font-size: 14px;
+    color: #c00;
+    margin-top: 4px;
+}

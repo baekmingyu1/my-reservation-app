@@ -22,16 +22,24 @@
             <div class="slots">
                 {% for slot in timeslots %}
                     {% set time_text = slot.time %}
-                    {% if "12:30" <= time_text[11:] %}
-                        <button type="button" class="slot" onclick="openModal('{{ time_text }}')"
-                                {% if slot.full %}disabled class="slot full"{% endif %}>
-                            {{ time_text[11:] }} ({{ slot.count }}/6)
-                        </button>
-                    {% else %}
-                        <button class="slot {% if slot.full %}full{% endif %}" name="timeslot" value="{{ time_text }}" type="submit" {% if slot.full %}disabled{% endif %}>
-                            {{ time_text[11:] }} ({{ slot.count }}/3)
-                        </button>
-                    {% endif %}
+                    <div style="text-align: center;">
+                        {% if slot.full %}
+                            <button class="slot full" disabled>
+                                {{ time_text[11:] }} ({{ slot.count }}/6)
+                            </button>
+                            <div class="slot-full-label">예약이 마감되었습니다.</div>
+                        {% else %}
+                            {% if "12:30" <= time_text[11:] %}
+                                <button type="button" class="slot" onclick="openModal('{{ time_text }}')">
+                                    {{ time_text[11:] }} ({{ slot.count }}/6)
+                                </button>
+                            {% else %}
+                                <button class="slot" name="timeslot" value="{{ time_text }}" type="submit">
+                                    {{ time_text[11:] }} ({{ slot.count }}/3)
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -75,11 +83,9 @@
             document.getElementById("modal-name").value = nameValue;
             document.getElementById("modal-time-label").innerText = time.slice(11) + " 시간 예약";
 
-            // Update 버튼 텍스트
             document.getElementById("in-label").innerText = `안쪽 (${inInfo.reserved}/3)`;
             document.getElementById("out-label").innerText = `바깥 (${outInfo.reserved}/3)`;
 
-            // Disable 버튼 및 경고
             document.getElementById("in-button").disabled = inInfo.remaining <= 0;
             document.getElementById("out-button").disabled = outInfo.remaining <= 0;
 
