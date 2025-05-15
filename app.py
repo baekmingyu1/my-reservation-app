@@ -4,6 +4,7 @@ import psycopg2
 from flask import Flask, render_template, request, redirect
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
+from pytz import timezone
 import traceback
 
 # 💡 환경 변수 로드
@@ -15,6 +16,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", "default-secret")
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+
+# ✅ 한국 시간 가져오기 (KST)
+def get_kst_now():
+    return datetime.now(timezone("Asia/Seoul"))
 
 # ✅ DB 초기화
 def init_db():
@@ -40,7 +45,7 @@ def init_db():
                     );
                     """)
 
-        # 예약 오픈 시간 기본값 (중복 무시)
+        # 기본 예약 오픈 시간 삽입 (중복 시 무시)
         cur.execute("""
                     INSERT INTO settings (key, value)
                     VALUES ('reservation_open_time', '2025-05-25 09:00')
@@ -57,7 +62,7 @@ def init_db():
 
 init_db()
 
-# 오픈 시간 가져오기
+# 설정된 예약 오픈 시간 가져오기
 def get_reservation_open_time():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
@@ -69,7 +74,7 @@ def get_reservation_open_time():
         return datetime.strptime(row[0], '%Y-%m-%d %H:%M')
     return None
 
-# 시간대 생성
+# 시간대 생성 함수
 def generate_timeslots():
     base_time = datetime(2025, 5, 25, 10, 0)
     all_slots = [(base_time + timedelta(minutes=5 * i)) for i in range(60)]
@@ -79,14 +84,14 @@ def generate_timeslots():
         if not (datetime(2025, 5, 25, 11, 0) <= t < datetime(2025, 5, 25, 12, 30))
     ]
 
-# 홈 페이지
+# 메인 예약 페이지
 @app.route('/', methods=['GET', 'POST'])
 def index():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     message = None
     open_time = get_reservation_open_time()
-    now = datetime.now()
+    now = get_kst_now()  # 한국 시간 기준
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -163,7 +168,7 @@ def admin():
     conn.close()
     return render_template('admin.html', grouped=grouped, open_time=open_time)
 
-# 관리자 - 오픈 시간 설정
+# 오픈 시간 설정
 @app.route('/admin/set_open_time', methods=['POST'])
 def set_open_time():
     new_time = request.form.get('open_time')
