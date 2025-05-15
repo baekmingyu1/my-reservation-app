@@ -10,6 +10,9 @@
 </head>
 <body>
 <div class="container">
+    <!-- ✅ 공통 로고 삽입 -->
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo" />
+
     {% block content %}{% endblock %}
 </div>
 </body>
