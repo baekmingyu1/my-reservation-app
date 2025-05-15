@@ -38,12 +38,12 @@
             <div class="label">시간 선택</div>
             <div class="slots">
                 {% for t in timeslots %}
-                    {% set hour = t[:16] %}
-                    {% if '12:30' <= hour[11:] %}
-                        <button type="button" class="slot" onclick="openModal('{{ t }}')">{{ t[11:] }}</button>
+                    {% set time_text = t.time %}
+                    {% if "12:30" <= time_text[11:] %}
+                        <button type="button" class="slot" onclick="openModal('{{ time_text }}')">{{ time_text[11:] }}</button>
                     {% else %}
-                        <button class="slot {% if t.full %}full{% endif %}" name="timeslot" value="{{ t }}" type="submit" {% if t.full %}disabled{% endif %}>
-                            {{ t[11:] }} {% if t.full %}(마감){% endif %}
+                        <button class="slot {% if t.full %}full{% endif %}" name="timeslot" value="{{ time_text }}" type="submit" {% if t.full %}disabled{% endif %}>
+                            {{ time_text[11:] }} {% if t.full %}(마감){% endif %}
                         </button>
                     {% endif %}
                 {% endfor %}
