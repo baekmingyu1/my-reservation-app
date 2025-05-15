@@ -204,15 +204,52 @@ def load_slots_with_counts(cur):
 @app.route('/my', methods=['GET', 'POST'])
 def my():
     name = request.form.get('name') if request.method == 'POST' else None
+    message = None
     reservations = []
+
     if name:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+
         cur.execute("SELECT * FROM reservations WHERE name = %s ORDER BY created_at", (name,))
         reservations = cur.fetchall()
+
         cur.close()
         conn.close()
-    return render_template("my.html", name=name, reservations=reservations)
+
+        if not reservations:
+            message = "예약 내역이 없습니다."
+
+    return render_template("my.html", name=name, message=message, reservations=reservations)
+
+
+@app.route('/cancel_reservation', methods=['POST'])
+def cancel_reservation():
+    name = request.form.get('name')
+    timeslot = request.form.get('timeslot')
+    message = ""
+    reservations = []
+
+    if name and timeslot:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
+        deleted = cur.rowcount
+        conn.commit()
+
+        cur.execute("SELECT * FROM reservations WHERE name = %s ORDER BY created_at", (name,))
+        reservations = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+        message = f"✅ {timeslot} 예약이 취소되었습니다." if deleted else "❌ 예약을 찾을 수 없습니다."
+    else:
+        message = "❌ 이름 또는 시간 정보가 누락되었습니다."
+
+    return render_template("my.html", name=name, message=message, reservations=reservations)
+
 
 @app.route('/cancel_reservation', methods=['POST'])
 def cancel_reservation():
@@ -252,11 +289,17 @@ def admin():
 
         elif action == "set_open":
             open_time_val = request.form.get("open_time")
+            # datetime-local → 정규 포맷으로 저장 (선택사항)
+            try:
+                dt = datetime.strptime(open_time_val, "%Y-%m-%dT%H:%M")
+                formatted = dt.strftime("%Y-%m-%d %H:%M")
+            except:
+                formatted = open_time_val  # fallback
             cur.execute("""
                         INSERT INTO settings (key, value)
                         VALUES ('open_time', %s)
                             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-                        """, (open_time_val,))
+                        """, (formatted,))
 
         elif action == "add_reservation":
             name = request.form.get("admin_name")
@@ -282,7 +325,7 @@ def admin():
     for r in reservations:
         grouped[r["timeslot"]].append(r)
 
-    # ✅ 오픈 시간 불러오기 및 datetime-local 형식 변환
+    # ✅ 오픈 시간 불러오기 및 포맷 처리
     cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
     row = cur.fetchone()
 
@@ -304,6 +347,33 @@ def admin():
     conn.close()
 
     return render_template("admin.html", grouped=grouped, open_time=open_time)
+
+
+@app.route("/admin/delete_reservation", methods=["POST"])
+@admin_required
+def delete_reservation():
+    reservation_id = request.form.get("reservation_id")
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM reservations WHERE id = %s", (reservation_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect("/admin")
+
+
+@app.route("/admin/toggle_used", methods=["POST"])
+@admin_required
+def toggle_used():
+    reservation_id = request.form.get("id")
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE reservations SET used = NOT used WHERE id = %s", (reservation_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect("/admin")
+
 
 
 

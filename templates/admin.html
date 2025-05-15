@@ -1,99 +1,99 @@
-@app.route("/admin", methods=["GET", "POST"])
-@admin_required
-def admin():
-conn = get_connection()
-cur = conn.cursor(cursor_factory=RealDictCursor)
+{% extends "base.html" %}
+{% block title %}관리자 예약 확인{% endblock %}
 
-action = request.form.get("action")
+{% block content %}
+    <div style="margin-bottom: 20px;">
+        <a href="#section-in" style="margin-right: 20px;">🔵 안쪽 예약으로 이동</a>
+        <a href="#section-out">🟢 바깥쪽 예약으로 이동</a>
+    </div>
 
-# ✅ POST 처리
-if request.method == "POST":
-if action == "reset_used":
-cur.execute("UPDATE reservations SET used = FALSE")
+    <h2>관리자 예약 현황</h2>
 
-elif action == "set_open":
-open_time_val = request.form.get("open_time")
-# datetime-local → 정규 포맷으로 저장 (선택사항)
-try:
-dt = datetime.strptime(open_time_val, "%Y-%m-%dT%H:%M")
-formatted = dt.strftime("%Y-%m-%d %H:%M")
-except:
-formatted = open_time_val  # fallback
-cur.execute("""
-INSERT INTO settings (key, value)
-VALUES ('open_time', %s)
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-""", (formatted,))
+    <form method="post">
+        <div style="margin-bottom: 10px">
+            <label>예약 오픈 시간: </label>
+            <input name="open_time" type="datetime-local" value="{{ open_time }}">
+            <button type="submit" name="action" value="set_open">저장</button>
+        </div>
 
-elif action == "add_reservation":
-name = request.form.get("admin_name")
-timeslot = request.form.get("admin_time")
-if name and timeslot:
-cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (timeslot,))
-count = cur.fetchone()['count']
-if count < 3:
-order_in_slot = count + 1
-cur.execute("""
-INSERT INTO reservations (name, timeslot, order_in_slot)
-VALUES (%s, %s, %s)
-""", (name, timeslot, order_in_slot))
+        <div style="margin-bottom: 10px">
+            <label>이름:</label>
+            <input name="admin_name" placeholder="이름 입력">
+            <label>시간:</label>
+            <input name="admin_time" placeholder="예: 2025-05-25 10:30 (안)">
+            <button type="submit" name="action" value="add_reservation">예약 추가</button>
+        </div>
 
-conn.commit()
+        <div style="margin-bottom: 10px">
+            <button type="submit" name="action" value="reset_used">이용완료 전체 초기화</button>
+        </div>
+    </form>
 
-# ✅ 예약 목록 조회 및 그룹화
-cur.execute("SELECT * FROM reservations ORDER BY timeslot, order_in_slot")
-reservations = cur.fetchall()
+    <hr>
 
-from collections import defaultdict
-grouped = defaultdict(list)
-for r in reservations:
-grouped[r["timeslot"]].append(r)
+    <h3 id="section-in">🔵 안쪽 예약</h3>
 
-# ✅ 오픈 시간 불러오기 및 포맷 처리
-cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
-row = cur.fetchone()
+    {% for time, slots in grouped.items() if '(안)' in time %}
+        <table border="1" cellpadding="5" style="margin-bottom: 20px; border-collapse: collapse;">
+            <caption style="font-weight: bold; margin-bottom: 5px;">🕒 {{ time }}</caption>
+            <tr>
+                <th>예약자</th>
+                <th>번호</th>
+                <th>이용 완료</th>
+                <th>삭제</th>
+            </tr>
+            {% for r in slots %}
+                <tr>
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.order_in_slot }}</td>
+                    <td>
+                        <form method="post" action="/admin/toggle_used" style="display:inline;">
+                            <input type="hidden" name="id" value="{{ r.id }}">
+                            <button>{{ "✅" if r.used else "❌" }}</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" action="/admin/delete_reservation" style="display:inline;">
+                            <input type="hidden" name="reservation_id" value="{{ r.id }}">
+                            <button type="submit">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
 
-open_time = ""
-if row and row.get("value"):
-raw_time = row["value"].strip()
-try:
-dt = datetime.strptime(raw_time, "%Y-%m-%d %H:%M")
-open_time = dt.strftime("%Y-%m-%dT%H:%M")
-except ValueError:
-try:
-dt = datetime.strptime(raw_time, "%Y-%m-%dT%H:%M")
-open_time = dt.strftime("%Y-%m-%dT%H:%M")
-except:
-print("⚠️ 오픈 시간 파싱 실패:", raw_time)
-open_time = ""
+    <h3 id="section-out">🟢 바깥쪽 예약</h3>
 
-cur.close()
-conn.close()
+    {% for time, slots in grouped.items() if '(밖)' in time or '(안)' not in time %}
+        <table border="1" cellpadding="5" style="margin-bottom: 20px; border-collapse: collapse;">
+            <caption style="font-weight: bold; margin-bottom: 5px;">🕒 {{ time }}</caption>
+            <tr>
+                <th>예약자</th>
+                <th>번호</th>
+                <th>이용 완료</th>
+                <th>삭제</th>
+            </tr>
+            {% for r in slots %}
+                <tr>
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.order_in_slot }}</td>
+                    <td>
+                        <form method="post" action="/admin/toggle_used" style="display:inline;">
+                            <input type="hidden" name="id" value="{{ r.id }}">
+                            <button>{{ "✅" if r.used else "❌" }}</button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="post" action="/admin/delete_reservation" style="display:inline;">
+                            <input type="hidden" name="reservation_id" value="{{ r.id }}">
+                            <button type="submit">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
 
-return render_template("admin.html", grouped=grouped, open_time=open_time)
-
-
-@app.route("/admin/delete_reservation", methods=["POST"])
-@admin_required
-def delete_reservation():
-reservation_id = request.form.get("reservation_id")
-conn = get_connection()
-cur = conn.cursor()
-cur.execute("DELETE FROM reservations WHERE id = %s", (reservation_id,))
-conn.commit()
-cur.close()
-conn.close()
-return redirect("/admin")
-
-
-@app.route("/admin/toggle_used", methods=["POST"])
-@admin_required
-def toggle_used():
-reservation_id = request.form.get("id")
-conn = get_connection()
-cur = conn.cursor()
-cur.execute("UPDATE reservations SET used = NOT used WHERE id = %s", (reservation_id,))
-conn.commit()
-cur.close()
-conn.close()
-return redirect("/admin")
+    <a class="action-link" href="/">← 메인으로</a>
+{% endblock %}
