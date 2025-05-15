@@ -1,27 +1,23 @@
 import os
 from dotenv import load_dotenv
 import psycopg2
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 import traceback
 
-# 💡 명시적 경로로 .env 강제 로드
+# 💡 .env 강제 로드
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path)
 
-# ✅ 환경 변수 확인
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret")
-
 print("📡 DB URL:", DATABASE_URL)
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-
 # ✅ DB 초기화 함수
-
 def init_db():
     print("DB URL 확인:", repr(DATABASE_URL))
     try:
@@ -82,6 +78,47 @@ def index():
     cur.close()
     conn.close()
     return render_template('index.html', timeslots=slots, message=message)
+
+@app.route('/my', methods=['GET', 'POST'])
+def my_reservations():
+    reservations = []
+    if request.method == 'POST':
+        name = request.form.get('name')
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT timeslot FROM reservations WHERE name = %s", (name,))
+        reservations = cur.fetchall()
+        cur.close()
+        conn.close()
+    return render_template('my.html', reservations=reservations)
+
+@app.route('/cancel', methods=['GET', 'POST'])
+def cancel():
+    message = None
+    if request.method == 'POST':
+        name = request.form.get('name')
+        timeslot = request.form.get('timeslot')
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
+        conn.commit()
+        cur.close()
+        conn.close()
+        message = f"{name}님의 {timeslot} 예약이 취소되었습니다."
+    return render_template('cancel.html', message=message)
+
+@app.route('/admin')
+def admin():
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute("SELECT timeslot, name FROM reservations ORDER BY timeslot")
+    rows = cur.fetchall()
+    grouped = {}
+    for time, name in rows:
+        grouped.setdefault(time, []).append(name)
+    cur.close()
+    conn.close()
+    return render_template('admin.html', grouped=grouped)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
