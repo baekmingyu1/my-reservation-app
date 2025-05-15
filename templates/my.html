@@ -1,35 +1,48 @@
-{% extends "base.html" %}
-{% block title %}내 예약 확인{% endblock %}
+@app.route('/my', methods=['GET', 'POST'])
+def my():
+name = request.form.get('name') if request.method == 'POST' else None
+message = None
+reservations = []
 
-{% block content %}
-    <div class="title">내 예약 확인</div>
+if name:
+conn = get_connection()
+cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    <form method="post" class="name-row">
-        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required
-               value="{{ name or '' }}" style="min-width: 180px;">
-        <button class="input-box" style="width: auto;">조회</button>
-    </form>
+cur.execute("SELECT * FROM reservations WHERE name = %s ORDER BY created_at", (name,))
+reservations = cur.fetchall()
 
-    {% if reservations %}
-        <ul>
-            {% for r in reservations %}
-                <li>
-                    {{ r.timeslot }}
-                    <form method="post" action="/cancel_reservation" style="display:inline;">
-                        <input type="hidden" name="name" value="{{ name }}">
-                        <input type="hidden" name="timeslot" value="{{ r.timeslot }}">
-                        <button type="submit" class="delete-btn">취소</button>
-                    </form>
-                </li>
-            {% endfor %}
-        </ul>
-    {% elif name %}
-        <p class="message">예약 내역이 없습니다.</p>
-    {% endif %}
+cur.close()
+conn.close()
 
-    {% if message %}
-        <div class="message">{{ message }}</div>
-    {% endif %}
+if not reservations:
+message = "예약 내역이 없습니다."
 
-    <a class="action-link" href="/">← 메인으로</a>
-{% endblock %}
+return render_template("my.html", name=name, message=message, reservations=reservations)
+
+
+@app.route('/cancel_reservation', methods=['POST'])
+def cancel_reservation():
+name = request.form.get('name')
+timeslot = request.form.get('timeslot')
+message = ""
+reservations = []
+
+if name and timeslot:
+conn = get_connection()
+cur = conn.cursor(cursor_factory=RealDictCursor)
+
+cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
+deleted = cur.rowcount
+conn.commit()
+
+cur.execute("SELECT * FROM reservations WHERE name = %s ORDER BY created_at", (name,))
+reservations = cur.fetchall()
+
+cur.close()
+conn.close()
+
+message = f"✅ {timeslot} 예약이 취소되었습니다." if deleted else "❌ 예약을 찾을 수 없습니다."
+else:
+message = "❌ 이름 또는 시간 정보가 누락되었습니다."
+
+return render_template("my.html", name=name, message=message, reservations=reservations)

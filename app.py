@@ -106,18 +106,26 @@ def index():
         name = request.form.get('name')
         timeslot = request.form.get('timeslot')
 
-        # ✅ 오픈 시간 체크
+        # ✅ 예약 오픈 시간 체크 (T 포함 형식 대응)
         cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
         row = cur.fetchone()
-        if row:
-            open_time = datetime.strptime(row['value'], '%Y-%m-%d %H:%M')
-            if datetime.now() < open_time:
-                slots, slot_counts = load_slots_with_counts(cur)
-                return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=slots, timeslot_counts=slot_counts)
+        open_time = None
+        if row and row.get("value"):
+            raw_open_time = row['value'].strip()
+            try:
+                open_time = datetime.strptime(raw_open_time, '%Y-%m-%d %H:%M')
+            except ValueError:
+                try:
+                    open_time = datetime.strptime(raw_open_time, '%Y-%m-%dT%H:%M')
+                except ValueError:
+                    print("❗ 오픈 시간 포맷 에러:", raw_open_time)
+        if open_time and datetime.now() < open_time:
+            slots, slot_counts = load_slots_with_counts(cur)
+            return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=slots, timeslot_counts=slot_counts)
 
-        # ✅ 오전 시간 + (안) 구역은 예약 불가
+        # ✅ 오전 시간에 '안쪽' 예약 차단
         try:
-            raw_dt = timeslot.split(' ')[0] + ' ' + timeslot.split(' ')[1]  # "2025-05-25 10:30"
+            raw_dt = timeslot.split(' ')[0] + ' ' + timeslot.split(' ')[1]
             slot_time = datetime.strptime(raw_dt, "%Y-%m-%d %H:%M")
             if slot_time < datetime(2025, 5, 25, 12, 30) and '(안)' in timeslot:
                 message = "❌ 오전 시간은 '바깥'만 예약 가능합니다."
@@ -149,11 +157,11 @@ def index():
             else:
                 message = "해당 시간대는 예약이 마감되었습니다."
 
-    # ✅ 시간대 목록 렌더링
     slots, slot_counts = load_slots_with_counts(cur)
     cur.close()
     conn.close()
     return render_template('index.html', timeslots=slots, message=message, timeslot_counts=slot_counts)
+
 
 
 def load_slots_with_counts(cur):
