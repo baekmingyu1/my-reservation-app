@@ -22,26 +22,29 @@
             <div class="slots">
                 {% for slot in timeslots %}
                     {% set time_text = slot.time %}
-                    <div style="text-align: center;">
-                        {% if slot.full %}
-                            <button class="slot full" disabled>
-                                {{ time_text[11:] }} ({{ slot.count }}/6)
+                    {% set display_time = time_text[11:] %}
+                    {% if slot.full %}
+                        <button class="slot full" disabled>
+                            {{ display_time }}<br>
+                            안({{ slot.in }}/3) / 밖({{ slot.out }}/3)<br>
+                            <span style="font-size: 12px; color: #c00;">예약 마감</span>
+                        </button>
+                    {% else %}
+                        {% if "12:30" <= display_time %}
+                            <button type="button" class="slot" onclick="openModal('{{ time_text }}')">
+                                {{ display_time }}<br>
+                                안({{ slot.in }}/3) / 밖({{ slot.out }}/3)
                             </button>
-                            <div class="slot-full-label">예약이 마감되었습니다.</div>
                         {% else %}
-                            {% if "12:30" <= time_text[11:] %}
-                                <button type="button" class="slot" onclick="openModal('{{ time_text }}')">
-                                    {{ time_text[11:] }} ({{ slot.count }}/6)
-                                </button>
-                            {% else %}
-                                <button class="slot" name="timeslot" value="{{ time_text }}" type="submit">
-                                    {{ time_text[11:] }} ({{ slot.count }}/3)
-                                </button>
-                            {% endif %}
+                            <button class="slot" name="timeslot" value="{{ time_text }}" type="submit">
+                                {{ display_time }} ({{ slot.count }}/3)
+                            </button>
                         {% endif %}
-                    </div>
+                    {% endif %}
                 {% endfor %}
             </div>
+
+
         </div>
     </form>
 
