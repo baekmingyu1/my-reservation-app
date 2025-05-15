@@ -12,6 +12,7 @@
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
+            vertical-align: top;
         }
         th {
             background-color: #f5f5f5;
@@ -22,6 +23,10 @@
             color: #555;
             margin-bottom: 10px;
         }
+        .complete-checkbox {
+            margin-left: 8px;
+            font-size: 16px;
+        }
     </style>
 {% endblock %}
 
@@ -29,12 +34,26 @@
     <div class="title">전체 예약 현황</div>
     <a class="logout" href="/logout">로그아웃</a>
 
-    <table>
-        <tr><th>시간대</th><th>예약자 목록</th></tr>
-        {% for time, users in grouped.items() %}
-            <tr><td>{{ time }}</td><td>{{ users|join(', ') }}</td></tr>
-        {% endfor %}
-    </table>
+    <form method="post">
+        <table>
+            <tr><th>시간대</th><th>예약자 목록</th></tr>
+            {% for time, users in grouped.items() %}
+                <tr>
+                    <td>{{ time }}</td>
+                    <td>
+                        {% for user in users %}
+                            {{ loop.index }}. {{ user.name }}
+                            <label class="complete-checkbox">
+                                <input type="checkbox" name="used_ids" value="{{ user.id }}" {% if user.used %}checked{% endif %}>
+                                완료
+                            </label><br>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        <button class="input-box" style="margin-top: 20px; width: auto;">이용 완료 저장</button>
+    </form>
 
     <hr>
     <div class="title">예약 오픈 시간 설정</div>

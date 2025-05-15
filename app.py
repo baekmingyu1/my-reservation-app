@@ -177,18 +177,34 @@ def logout():
     return redirect('/')
 
 # ✅ 관리자 페이지
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 @login_required
 def admin():
     conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    cur.execute("SELECT timeslot, name FROM reservations ORDER BY timeslot")
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    # ✅ POST: 이용 완료 체크 저장
+    if request.method == 'POST':
+        ids = request.form.getlist('used_ids')
+        cur.execute("UPDATE reservations SET used = FALSE")  # 전체 초기화
+        if ids:
+            cur.execute(
+                "UPDATE reservations SET used = TRUE WHERE id = ANY(%s)",
+                (list(map(int, ids)),)
+            )
+        conn.commit()
+
+    # ✅ 예약 목록 그룹화 및 순번 부여
+    cur.execute("SELECT * FROM reservations ORDER BY timeslot, created_at")
     rows = cur.fetchall()
     grouped = {}
-    for time, name in rows:
-        grouped.setdefault(time, []).append(name)
+    for row in rows:
+        grouped.setdefault(row['timeslot'], []).append(row)
+
+    # 예약 오픈 시간 불러오기
     cur.execute("SELECT value FROM settings WHERE key = 'reservation_open_time'")
     open_time = cur.fetchone()[0] if cur.rowcount else "설정 안 됨"
+
     cur.close()
     conn.close()
     return render_template('admin.html', grouped=grouped, open_time=open_time)
@@ -209,6 +225,7 @@ def set_open_time():
     cur.close()
     conn.close()
     return redirect('/admin')
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

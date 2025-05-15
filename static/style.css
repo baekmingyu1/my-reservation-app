@@ -76,21 +76,21 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 10px;
-    justify-items: center;  /* ✅ 버튼 중앙 정렬 */
+    justify-items: center; /* ✅ 버튼 중앙 정렬 */
 }
 
 .slot {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 150px;             /* ✅ PC: 고정 너비 */
-    height: 60px;             /* ✅ 고정 높이 */
+    width: 150px; /* ✅ PC: 고정 너비 */
+    height: 60px; /* ✅ 고정 높이 */
     padding: 5px 10px;
     background: #FAFAE0;
     border-radius: 6px;
     border: 1px solid #2C2C2C;
     color: #47608B;
-    font-size: 20px;          /* ✅ 크게 보기 좋게 */
+    font-size: 20px; /* ✅ 크게 보기 좋게 */
     font-weight: 700;
     text-align: center;
     cursor: pointer;
@@ -132,9 +132,14 @@ form {
     }
 
     .slot {
-        width: 100%;          /* ✅ 모바일은 전체 너비 */
+        width: 100%; /* ✅ 모바일은 전체 너비 */
         height: auto;
         font-size: 18px;
         padding: 8px 10px;
     }
+
+    .form-field {
+        margin-bottom: 10px;
+    }
+
 }
