@@ -3,9 +3,13 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
-load_dotenv()
+if os.environ.get("RENDER") != "true":
+    from dotenv import load_dotenv
+    load_dotenv()
 
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "default-secret")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "default-secret")
