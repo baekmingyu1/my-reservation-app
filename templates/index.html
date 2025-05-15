@@ -37,13 +37,15 @@
         <div class="slot-section">
             <div class="label">시간 선택</div>
             <div class="slots">
-                {% for t in timeslots %}
-                    {% set time_text = t.time %}
+                {% for slot in timeslots %}
+                    {% set time_text = slot.time %}
                     {% if "12:30" <= time_text[11:] %}
-                        <button type="button" class="slot" onclick="openModal('{{ time_text }}')">{{ time_text[11:] }}</button>
+                        <button type="button" class="slot" onclick="openModal('{{ time_text }}')">
+                            {{ time_text[11:] }} ({{ slot.count }}/3)
+                        </button>
                     {% else %}
-                        <button class="slot {% if t.full %}full{% endif %}" name="timeslot" value="{{ time_text }}" type="submit" {% if t.full %}disabled{% endif %}>
-                            {{ time_text[11:] }} {% if t.full %}(마감){% endif %}
+                        <button class="slot {% if slot.full %}full{% endif %}" name="timeslot" value="{{ time_text }}" type="submit" {% if slot.full %}disabled{% endif %}>
+                            {{ time_text[11:] }} ({{ slot.count }}/3)
                         </button>
                     {% endif %}
                 {% endfor %}
@@ -54,13 +56,17 @@
     <!-- ✅ 모달 -->
     <div id="timeModal" class="modal">
         <div class="modal-content">
-            <h3 id="modal-time-label">시간 선택</h3>
+            <h3 id="modal-time-label">시간 예약</h3>
             <form method="post">
                 <input type="hidden" name="name" id="modal-name" />
                 <input type="hidden" name="timeslot" id="modal-timeslot" />
                 <div class="modal-buttons">
-                    <button type="submit" onclick="setArea('안')">안쪽</button>
-                    <button type="submit" onclick="setArea('밖')">바깥</button>
+                    <button type="submit" onclick="setArea('안')">
+                        <span id="in-label">안쪽</span>
+                    </button>
+                    <button type="submit" onclick="setArea('밖')">
+                        <span id="out-label">바깥</span>
+                    </button>
                     <button type="button" onclick="closeModal()">닫기</button>
                 </div>
             </form>
@@ -68,7 +74,9 @@
     </div>
 
     <script>
+        const timeslotCounts = {{ timeslot_counts | tojson }};
         let selectedTime = "";
+
         function openModal(time) {
             selectedTime = time;
             const nameValue = document.getElementById("nameInput").value.trim();
@@ -78,6 +86,13 @@
             }
             document.getElementById("modal-name").value = nameValue;
             document.getElementById("modal-time-label").innerText = time.slice(11) + " 시간 예약";
+            document.getElementById("modal-timeslot").value = ""; // 초기화
+
+            const inCount = timeslotCounts[time]?.in ?? "?";
+            const outCount = timeslotCounts[time]?.out ?? "?";
+            document.getElementById("in-label").innerText = `안쪽 (${inCount}자리 남음)`;
+            document.getElementById("out-label").innerText = `바깥 (${outCount}자리 남음)`;
+
             document.getElementById("timeModal").style.display = "flex";
         }
 

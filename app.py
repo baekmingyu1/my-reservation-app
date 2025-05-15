@@ -12,7 +12,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "your-password")  # 비밀번호 환경변수로 분리
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "your-password")
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -85,13 +85,14 @@ def index():
         if row:
             open_time = datetime.strptime(row['value'], '%Y-%m-%d %H:%M')
             if datetime.now() < open_time:
-                return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=load_slots(cur))
+                return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=load_slots(cur), timeslot_counts={})
 
-        # 중복 예약 확인
         cur.execute("SELECT COUNT(*) FROM reservations WHERE name = %s", (name,))
-        if cur.fetchone()['count'] == 0:
+        count_check = cur.fetchone()
+        if count_check and count_check['count'] == 0:
             cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
-            if cur.fetchone()['count'] < 3:
+            count_slot = cur.fetchone()
+            if count_slot and count_slot['count'] < 3:
                 cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
                 conn.commit()
                 message = f"{name}님, {timeslot} 예약이 완료되었습니다."
@@ -100,19 +101,32 @@ def index():
         else:
             message = "이미 예약한 이름입니다."
 
-    slots = load_slots(cur)
+    slots, slot_counts = load_slots_with_counts(cur)
     cur.close()
     conn.close()
-    return render_template('index.html', timeslots=slots, message=message)
+    return render_template('index.html', timeslots=slots, message=message, timeslot_counts=slot_counts)
 
-def load_slots(cur):
+def load_slots_with_counts(cur):
     slots = []
+    slot_counts = {}
     for t in generate_timeslots():
         cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t,))
         result = cur.fetchone()
         count = result['count'] if result else 0
-        slots.append({ 'time': t, 'count': count, 'full': count >= 3 })
-    return slots
+        slots.append({
+            'time': t,
+            'count': count,
+            'full': count >= 3,
+            'remaining': 3 - count
+        })
+        # 모달용 안/밖 카운트
+        cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (안)",))
+        in_count = cur.fetchone()['count'] if cur.rowcount else 0
+        cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (밖)",))
+        out_count = cur.fetchone()['count'] if cur.rowcount else 0
+        slot_counts[t] = {"in": 3 - in_count, "out": 3 - out_count}
+    return slots, slot_counts
+
 
 # --- 내 예약 확인 ---
 @app.route('/my', methods=['GET', 'POST'])
