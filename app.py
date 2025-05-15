@@ -89,9 +89,9 @@ def index():
 
         # 중복 예약 확인
         cur.execute("SELECT COUNT(*) FROM reservations WHERE name = %s", (name,))
-        if cur.fetchone()[0] == 0:
+        if cur.fetchone()['count'] == 0:
             cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
-            if cur.fetchone()[0] < 3:
+            if cur.fetchone()['count'] < 3:
                 cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
                 conn.commit()
                 message = f"{name}님, {timeslot} 예약이 완료되었습니다."
@@ -108,8 +108,9 @@ def index():
 def load_slots(cur):
     slots = []
     for t in generate_timeslots():
-        cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (t,))
-        count = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t,))
+        result = cur.fetchone()
+        count = result['count'] if result else 0
         slots.append({ 'time': t, 'count': count, 'full': count >= 3 })
     return slots
 
