@@ -106,7 +106,7 @@ def index():
         name = request.form.get('name')
         timeslot = request.form.get('timeslot')
 
-        # 오픈 시간 체크
+        # 오픈 시간 확인
         cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
         row = cur.fetchone()
         if row:
@@ -115,7 +115,18 @@ def index():
                 slots, _ = load_slots_with_counts(cur)
                 return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=slots, timeslot_counts={})
 
-        # 중복 예약 검사
+        # ✅ 오전 시간에 '(안)' 예약 시도 차단
+        try:
+            raw_dt = timeslot.split(' ')[0] + ' ' + timeslot.split(' ')[1]  # "2025-05-25 10:30"
+            slot_time = datetime.strptime(raw_dt, "%Y-%m-%d %H:%M")
+            if slot_time < datetime(2025, 5, 25, 12, 30) and '(안)' in timeslot:
+                message = "❌ 오전 시간은 '바깥'만 예약 가능합니다."
+                slots, slot_counts = load_slots_with_counts(cur)
+                return render_template("index.html", message=message, timeslots=slots, timeslot_counts=slot_counts)
+        except Exception as e:
+            print("❗ 시간 파싱 실패:", e)
+
+        # 중복 검사
         cur.execute("SELECT timeslot FROM reservations WHERE name = %s", (name,))
         existing = [r['timeslot'] for r in cur.fetchall()]
         has_in = any('(안)' in t for t in existing)
@@ -127,14 +138,12 @@ def index():
             message = "이미 해당 구역에 예약하셨습니다."
         else:
             cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (timeslot,))
-            count_slot = cur.fetchone()
-            max_count = 3
-            if count_slot and count_slot['count'] < max_count:
-                order_in_slot = count_slot['count'] + 1
-                cur.execute(
-                    "INSERT INTO reservations (name, timeslot, order_in_slot) VALUES (%s, %s, %s)",
-                    (name, timeslot, order_in_slot)
-                )
+            result = cur.fetchone()
+            count = result["count"] if result else 0
+            if count < 3:
+                order_in_slot = count + 1
+                cur.execute("INSERT INTO reservations (name, timeslot, order_in_slot) VALUES (%s, %s, %s)",
+                            (name, timeslot, order_in_slot))
                 conn.commit()
                 message = f"{name}님, {timeslot} 예약이 완료되었습니다."
             else:
@@ -144,6 +153,7 @@ def index():
     cur.close()
     conn.close()
     return render_template('index.html', timeslots=slots, message=message, timeslot_counts=slot_counts)
+
 
 def load_slots_with_counts(cur):
     slots = []
