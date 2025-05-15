@@ -1,10 +1,11 @@
 import os
 from dotenv import load_dotenv
 import psycopg2
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session, url_for
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 from pytz import timezone
+from functools import wraps
 import traceback
 
 # 💡 환경 변수 로드
@@ -13,13 +14,23 @@ load_dotenv(dotenv_path=env_path)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "default-secret")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# ✅ 한국 시간 가져오기 (KST)
+# ✅ 한국 시간
 def get_kst_now():
     return datetime.now(timezone("Asia/Seoul"))
+
+# ✅ 로그인 필수 데코레이터
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
 
 # ✅ DB 초기화
 def init_db():
@@ -27,7 +38,6 @@ def init_db():
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
 
-        # 예약 테이블
         cur.execute("""
                     CREATE TABLE IF NOT EXISTS reservations (
                                                                 id SERIAL PRIMARY KEY,
@@ -37,7 +47,6 @@ def init_db():
                     );
                     """)
 
-        # 설정 테이블
         cur.execute("""
                     CREATE TABLE IF NOT EXISTS settings (
                                                             key TEXT PRIMARY KEY,
@@ -45,7 +54,6 @@ def init_db():
                     );
                     """)
 
-        # 기본 예약 오픈 시간 삽입 (중복 시 무시)
         cur.execute("""
                     INSERT INTO settings (key, value)
                     VALUES ('reservation_open_time', '2025-05-25 09:00')
@@ -62,7 +70,6 @@ def init_db():
 
 init_db()
 
-# 설정된 예약 오픈 시간 가져오기
 def get_reservation_open_time():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
@@ -71,14 +78,10 @@ def get_reservation_open_time():
     cur.close()
     conn.close()
     if row:
-        # 🛠️ KST 타임존 포함시키기
         naive = datetime.strptime(row[0], '%Y-%m-%d %H:%M')
-        kst = timezone("Asia/Seoul")
-        return kst.localize(naive)
+        return timezone("Asia/Seoul").localize(naive)
     return None
 
-
-# 시간대 생성 함수
 def generate_timeslots():
     base_time = datetime(2025, 5, 25, 10, 0)
     all_slots = [(base_time + timedelta(minutes=5 * i)) for i in range(60)]
@@ -88,14 +91,13 @@ def generate_timeslots():
         if not (datetime(2025, 5, 25, 11, 0) <= t < datetime(2025, 5, 25, 12, 30))
     ]
 
-# 메인 예약 페이지
 @app.route('/', methods=['GET', 'POST'])
 def index():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     message = None
     open_time = get_reservation_open_time()
-    now = get_kst_now()  # 한국 시간 기준
+    now = get_kst_now()
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -126,7 +128,6 @@ def index():
     conn.close()
     return render_template('index.html', timeslots=slots, message=message)
 
-# 내 예약 확인
 @app.route('/my', methods=['GET', 'POST'])
 def my_reservations():
     reservations = []
@@ -140,7 +141,6 @@ def my_reservations():
         conn.close()
     return render_template('my.html', reservations=reservations)
 
-# 예약 취소
 @app.route('/cancel', methods=['GET', 'POST'])
 def cancel():
     message = None
@@ -156,8 +156,29 @@ def cancel():
         message = f"{name}님의 {timeslot} 예약이 취소되었습니다."
     return render_template('cancel.html', message=message)
 
-# 관리자 페이지
+# ✅ 관리자 로그인
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == 'admin' and password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            return redirect('/admin')
+        else:
+            error = "❌ 로그인 실패: 아이디 또는 비밀번호가 올바르지 않습니다."
+    return render_template('login.html', error=error)
+
+# ✅ 로그아웃
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
+
+# ✅ 관리자 페이지
 @app.route('/admin')
+@login_required
 def admin():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
@@ -172,8 +193,9 @@ def admin():
     conn.close()
     return render_template('admin.html', grouped=grouped, open_time=open_time)
 
-# 오픈 시간 설정
+# ✅ 관리자 오픈 시간 설정
 @app.route('/admin/set_open_time', methods=['POST'])
+@login_required
 def set_open_time():
     new_time = request.form.get('open_time')
     conn = psycopg2.connect(DATABASE_URL)
