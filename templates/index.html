@@ -3,12 +3,15 @@
 
 {% block content %}
     <div class="title">포토존 순서 예약하기</div>
-    <form method="post" class="name-row">
-        <div class="label">이름 :</div>
-        <div class="input-wrapper">
-            <input class="input-box" name="name" placeholder="가교/결 이름을 입력해주세요." required style="min-width: 180px;" />
-            <button class="input-box" style="width: auto;">예약하기</button>
+    <form method="post">
+        <div class="name-row">
+            <div class="label">이름 :</div>
+            <div class="input-wrapper">
+                <input class="input-box" name="name" placeholder="이름을 입력해주세요" required style="min-width: 180px;">
+                <span style="font-size: 16px; font-weight: 500;">가교/결</span>
+            </div>
         </div>
+
     </form>
     {% if message %}
         <div class="message">{{ message }}</div>

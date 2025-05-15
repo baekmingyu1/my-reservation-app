@@ -10,6 +10,15 @@
 <body>
 <div class="container">
     <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="logo" />
+
+    <!-- ✅ 공통 네비게이션 추가 -->
+    <nav style="margin-bottom: 20px;">
+        <a class="nav-link" href="/">홈</a> |
+        <a class="nav-link" href="/my">내 예약 확인</a> |
+        <a class="nav-link" href="/cancel">예약 취소</a> |
+        <a class="nav-link" href="/login">관리자</a>
+    </nav>
+
     {% block content %}{% endblock %}
 </div>
 </body>
