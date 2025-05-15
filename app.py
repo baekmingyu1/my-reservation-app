@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, redirect, session, url_for
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
+from collections import defaultdict
 import traceback
 
 # Load .env
@@ -17,7 +18,6 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "your-password")
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# --- Utility ---
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
@@ -29,7 +29,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
-# --- DB 초기화 ---
 def init_db():
     try:
         conn = get_connection()
@@ -39,6 +38,7 @@ def init_db():
                                                                 id SERIAL PRIMARY KEY,
                                                                 name TEXT NOT NULL,
                                                                 timeslot TEXT NOT NULL,
+                                                                order_in_slot INTEGER,
                                                                 used BOOLEAN DEFAULT FALSE,
                                                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
@@ -57,7 +57,6 @@ def init_db():
 
 init_db()
 
-# --- 시간대 생성 ---
 def generate_timeslots():
     base_time = datetime(2025, 5, 25, 10, 0)
     all_slots = [(base_time + timedelta(minutes=5 * i)) for i in range(100)]
@@ -69,7 +68,6 @@ def generate_timeslots():
         times.append(formatted)
     return times
 
-# --- Index ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
     conn = get_connection()
@@ -89,10 +87,9 @@ def index():
                 slots, _ = load_slots_with_counts(cur)
                 return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=slots, timeslot_counts={})
 
-        # 중복 예약 검사 (오전은 '밖'으로 간주)
+        # 중복 예약 검사
         cur.execute("SELECT timeslot FROM reservations WHERE name = %s", (name,))
         existing = [r['timeslot'] for r in cur.fetchall()]
-
         has_in = any('(안)' in t for t in existing)
         has_out = any('(밖)' in t or ('(안)' not in t and '(밖)' not in t) for t in existing)
         is_in = '(안)' in timeslot
@@ -105,7 +102,11 @@ def index():
             count_slot = cur.fetchone()
             max_count = 3
             if count_slot and count_slot['count'] < max_count:
-                cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
+                order_in_slot = count_slot['count'] + 1
+                cur.execute(
+                    "INSERT INTO reservations (name, timeslot, order_in_slot) VALUES (%s, %s, %s)",
+                    (name, timeslot, order_in_slot)
+                )
                 conn.commit()
                 message = f"{name}님, {timeslot} 예약이 완료되었습니다."
             else:
@@ -140,7 +141,6 @@ def load_slots_with_counts(cur):
         total_reserved = in_count + out_count
         total_limit = 3 if is_morning else 6
         total_remaining = max(0, total_limit - total_reserved)
-
         label = t if not is_morning else t + " (밖)"
 
         slots.append({
@@ -154,10 +154,6 @@ def load_slots_with_counts(cur):
         })
     return slots, slot_counts
 
-# --- 나머지 라우트는 동일 ---
-
-
-# --- 내 예약 확인 ---
 @app.route('/my', methods=['GET', 'POST'])
 def my():
     name = request.form.get('name') if request.method == 'POST' else None
@@ -175,7 +171,6 @@ def my():
 def cancel_reservation():
     name = request.form.get('name')
     timeslot = request.form.get('timeslot')
-
     message = ""
     reservations = []
 
@@ -189,15 +184,11 @@ def cancel_reservation():
         reservations = cur.fetchall()
         cur.close()
         conn.close()
-
         message = f"✅ {timeslot} 예약이 취소되었습니다." if deleted else "❌ 예약을 찾을 수 없습니다."
     else:
         message = "❌ 이름 또는 시간 정보가 누락되었습니다."
 
     return render_template("my.html", name=name, message=message, reservations=reservations)
-
-# --- 관리자 ---
-from collections import defaultdict
 
 @app.route("/admin", methods=["GET", "POST"])
 @admin_required
@@ -205,19 +196,30 @@ def admin():
     conn = get_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    if request.method == "POST":
+    action = request.form.get("action")
+
+    if action == "reset_used":
         cur.execute("UPDATE reservations SET used = FALSE")
-        used_ids = request.form.getlist("used_ids")
-        if used_ids:
-            cur.execute("UPDATE reservations SET used = TRUE WHERE id = ANY(%s)", (used_ids,))
-        conn.commit()
+    elif action == "set_open":
+        open_time = request.form.get("open_time")
+        cur.execute("""
+                    INSERT INTO settings (key, value) VALUES ('open_time', %s)
+                        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                    """, (open_time,))
+    elif action == "add_reservation":
+        name = request.form.get("admin_name")
+        timeslot = request.form.get("admin_time")
+        if name and timeslot:
+            cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
+            count = cur.fetchone()[0]
+            if count < 3:
+                order_in_slot = count + 1
+                cur.execute("INSERT INTO reservations (name, timeslot, order_in_slot) VALUES (%s, %s, %s)",
+                            (name, timeslot, order_in_slot))
+    conn.commit()
 
-    cur.execute("SELECT * FROM reservations ORDER BY timeslot, created_at")
+    cur.execute("SELECT * FROM reservations ORDER BY timeslot, order_in_slot")
     reservations = cur.fetchall()
-
-    grouped = defaultdict(list)
-    for r in reservations:
-        grouped[r["timeslot"]].append(r)
 
     cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
     row = cur.fetchone()
@@ -225,8 +227,7 @@ def admin():
 
     cur.close()
     conn.close()
-
-    return render_template("admin.html", grouped=grouped, open_time=open_time)
+    return render_template("admin.html", reservations=reservations, open_time=open_time)
 
 @app.route("/admin/delete_reservation", methods=["POST"])
 @admin_required
@@ -240,40 +241,18 @@ def delete_reservation():
     conn.close()
     return redirect("/admin")
 
-@app.route("/admin/set_open_time", methods=["POST"])
+@app.route("/admin/toggle_used", methods=["POST"])
 @admin_required
-def set_open_time():
-    open_time = request.form.get("open_time")
+def toggle_used():
+    reservation_id = request.form.get("id")
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("""
-                INSERT INTO settings (key, value)
-                VALUES ('open_time', %s)
-                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-                """, (open_time,))
+    cur.execute("UPDATE reservations SET used = NOT used WHERE id = %s", (reservation_id,))
     conn.commit()
     cur.close()
     conn.close()
     return redirect("/admin")
 
-@app.route("/admin/add_reservation", methods=["POST"])
-@admin_required
-def add_reservation():
-    name = request.form.get("name")
-    timeslot = request.form.get("timeslot")
-    if name and timeslot:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
-        count = cur.fetchone()[0]
-        if count < 3:
-            cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
-            conn.commit()
-        cur.close()
-        conn.close()
-    return redirect("/admin")
-
-# --- 로그인 / 로그아웃 ---
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     error = None
@@ -292,7 +271,6 @@ def logout():
     session.pop("admin", None)
     return redirect("/")
 
-# --- Run ---
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

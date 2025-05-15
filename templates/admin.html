@@ -34,11 +34,11 @@
             <tr>
                 <td>{{ r.timeslot }}</td>
                 <td>{{ r.name }}</td>
-                <td>{{ r.order }}</td>
+                <td>{{ r.order_in_slot }}</td>
                 <td>
-                    <form method="post" style="display:inline;">
+                    <form method="post" action="/admin/toggle_used" style="display:inline;">
                         <input type="hidden" name="id" value="{{ r.id }}">
-                        <button name="action" value="toggle_used">{{ "✅" if r.used else "❌" }}</button>
+                        <button>{{ "✅" if r.used else "❌" }}</button>
                     </form>
                 </td>
                 <td>
@@ -64,11 +64,11 @@
             <tr>
                 <td>{{ r.timeslot }}</td>
                 <td>{{ r.name }}</td>
-                <td>{{ r.order }}</td>
+                <td>{{ r.order_in_slot }}</td>
                 <td>
-                    <form method="post" style="display:inline;">
+                    <form method="post" action="/admin/toggle_used" style="display:inline;">
                         <input type="hidden" name="id" value="{{ r.id }}">
-                        <button name="action" value="toggle_used">{{ "✅" if r.used else "❌" }}</button>
+                        <button>{{ "✅" if r.used else "❌" }}</button>
                     </form>
                 </td>
                 <td>
