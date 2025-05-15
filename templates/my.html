@@ -23,6 +23,8 @@
                 </li>
             {% endfor %}
         </ul>
+    {% elif name %}
+        <p class="message">예약 내역이 없습니다.</p>
     {% endif %}
 
     {% if message %}
