@@ -40,10 +40,12 @@ def init_db():
                                                                 id SERIAL PRIMARY KEY,
                                                                 name TEXT NOT NULL,
                                                                 timeslot TEXT NOT NULL,
-                                                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                                                used BOOLEAN DEFAULT FALSE
+                                                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                     """)
+
+        # ✅ used 컬럼 추가
+        cur.execute("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS used BOOLEAN DEFAULT FALSE;")
 
         cur.execute("""
                     CREATE TABLE IF NOT EXISTS settings (
@@ -61,8 +63,10 @@ def init_db():
         conn.commit()
         cur.close()
         conn.close()
+        print("✅ DB 초기화 완료")
     except Exception:
         traceback.print_exc()
+
 
 init_db()
 
