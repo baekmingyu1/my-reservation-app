@@ -2,44 +2,52 @@
     box-sizing: border-box;
     font-family: Pretendard, sans-serif;
 }
+
 body {
     margin: 0;
     padding: 21px 20px;
     background-color: white;
 }
+
 .container {
     max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 30px;
 }
+
 .logo {
     max-width: 200px;
     height: auto;
     margin-bottom: 10px;
 }
+
 .title {
     font-size: 28px;
     font-weight: 700;
     color: black;
 }
+
 .name-row, .actions {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 12px;
 }
+
 .label {
     font-size: 18px;
     font-weight: 700;
     color: #1E1E1E;
 }
+
 .input-wrapper {
     display: flex;
     align-items: center;
     gap: 5px;
     flex-wrap: wrap;
 }
+
 .input-box {
     width: 100%;
     max-width: 250px;
@@ -48,16 +56,19 @@ body {
     border-radius: 6px;
     font-size: 16px;
 }
+
 .slot-section {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
+
 .slots {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 10px;
 }
+
 .slot {
     padding: 10px;
     background: #FAFAE0;
@@ -69,15 +80,18 @@ body {
     text-align: center;
     cursor: pointer;
 }
+
 .slot.full {
     background: #ddd;
     color: #999;
     cursor: not-allowed;
 }
+
 .message {
     font-size: 16px;
     color: #c00;
 }
+
 .action-link {
     margin-top: 20px;
     display: inline-block;
@@ -85,13 +99,64 @@ body {
     font-size: 16px;
     color: #333;
 }
+
 .nav-link {
     text-decoration: none;
     font-size: 16px;
     color: #47608B;
     margin-right: 10px;
 }
+
 .nav-link:hover {
     text-decoration: underline;
 }
 
+/* ✅ 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 300px;
+    text-align: center;
+}
+
+.modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.modal-buttons button {
+    padding: 10px 15px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    background-color: #1e88e5;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.modal-buttons button:hover {
+    background-color: #1565c0;
+}
+
+.modal-buttons button:disabled {
+    background-color: #b0bec5;
+    cursor: not-allowed;
+}

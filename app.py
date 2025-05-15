@@ -87,10 +87,10 @@ def index():
             if datetime.now() < open_time:
                 return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=load_slots(cur), timeslot_counts={})
 
-        cur.execute("SELECT COUNT(*) FROM reservations WHERE name = %s", (name,))
+        cur.execute("SELECT COUNT(*) as count FROM reservations WHERE name = %s", (name,))
         count_check = cur.fetchone()
         if count_check and count_check['count'] == 0:
-            cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
+            cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (timeslot,))
             count_slot = cur.fetchone()
             if count_slot and count_slot['count'] < 3:
                 cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
@@ -110,22 +110,35 @@ def load_slots_with_counts(cur):
     slots = []
     slot_counts = {}
     for t in generate_timeslots():
-        cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t,))
-        result = cur.fetchone()
-        count = result['count'] if result else 0
-        slots.append({
-            'time': t,
-            'count': count,
-            'full': count >= 3,
-            'remaining': 3 - count
-        })
-        # 모달용 안/밖 카운트
+        # 안/밖 각각의 예약 수 확인
         cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (안)",))
         in_count = cur.fetchone()['count'] if cur.rowcount else 0
         cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (밖)",))
         out_count = cur.fetchone()['count'] if cur.rowcount else 0
-        slot_counts[t] = {"in": 3 - in_count, "out": 3 - out_count}
+
+        slot_counts[t] = {
+            "in": {
+                "reserved": in_count,
+                "remaining": 3 - in_count
+            },
+            "out": {
+                "reserved": out_count,
+                "remaining": 3 - out_count
+            }
+        }
+
+        total_reserved = in_count + out_count
+        total_remaining = max(0, 6 - total_reserved)
+
+        slots.append({
+            'time': t,
+            'count': total_reserved,
+            'full': total_reserved >= 6,
+            'remaining': total_remaining
+        })
     return slots, slot_counts
+
+# --- 나머지 라우트는 동일 ---
 
 
 # --- 내 예약 확인 ---
