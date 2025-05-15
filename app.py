@@ -71,8 +71,12 @@ def get_reservation_open_time():
     cur.close()
     conn.close()
     if row:
-        return datetime.strptime(row[0], '%Y-%m-%d %H:%M')
+        # 🛠️ KST 타임존 포함시키기
+        naive = datetime.strptime(row[0], '%Y-%m-%d %H:%M')
+        kst = timezone("Asia/Seoul")
+        return kst.localize(naive)
     return None
+
 
 # 시간대 생성 함수
 def generate_timeslots():
