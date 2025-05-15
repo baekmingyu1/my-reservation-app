@@ -33,27 +33,55 @@ def init_db():
     try:
         conn = get_connection()
         cur = conn.cursor()
+
+        # 테이블 생성
         cur.execute("""
                     CREATE TABLE IF NOT EXISTS reservations (
                                                                 id SERIAL PRIMARY KEY,
                                                                 name TEXT NOT NULL,
                                                                 timeslot TEXT NOT NULL,
-                                                                order_in_slot INTEGER,
                                                                 used BOOLEAN DEFAULT FALSE,
                                                                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                     """)
+
         cur.execute("""
                     CREATE TABLE IF NOT EXISTS settings (
                                                             key TEXT PRIMARY KEY,
                                                             value TEXT
                     );
                     """)
+
+        # ✅ order_in_slot 컬럼 없으면 추가
+        cur.execute("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'reservations' AND column_name = 'order_in_slot';
+                    """)
+        exists = cur.fetchone()
+        if not exists:
+            print("🛠️ order_in_slot 컬럼이 없어 추가합니다.")
+            cur.execute("ALTER TABLE reservations ADD COLUMN order_in_slot INTEGER;")
+
+            # 기존 데이터에 순서 부여
+            cur.execute("""
+                        WITH ordered AS (
+                            SELECT id,
+                                   ROW_NUMBER() OVER (PARTITION BY timeslot ORDER BY created_at) AS rn
+                            FROM reservations
+                        )
+                        UPDATE reservations
+                        SET order_in_slot = ordered.rn
+                            FROM ordered
+                        WHERE reservations.id = ordered.id;
+                        """)
+            print("✅ 기존 예약에 순서 부여 완료")
+
         conn.commit()
         cur.close()
         conn.close()
     except Exception:
         traceback.print_exc()
+
 
 init_db()
 
