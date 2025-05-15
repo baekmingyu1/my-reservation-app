@@ -24,9 +24,11 @@
             <div class="slots">
                 {% for slot in timeslots %}
                     {% if slot.full %}
-                        <div class="slot full">{{ slot.time }} (3/3)</div>
+                        <div class="slot full">{{ slot.time[11:] }} (3/3)</div>
                     {% else %}
-                        <button type="submit" name="timeslot" value="{{ slot.time }}" class="slot">{{ slot.time }} ({{ slot.count }}/3)</button>
+                        <button type="submit" name="timeslot" value="{{ slot.time }}" class="slot">
+                            {{ slot.time[11:] }} ({{ slot.count }}/3)
+                        </button>
                     {% endif %}
                 {% endfor %}
             </div>
