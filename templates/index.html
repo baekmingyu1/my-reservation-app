@@ -23,27 +23,20 @@
                 {% for slot in timeslots %}
                     {% set time_text = slot.time %}
                     {% set display_time = time_text[11:] %}
-                    {% if slot.full %}
-                        <button class="slot full" disabled>
-                            {{ display_time }} ({{ slot.count }}/{{ '6' if display_time >= '12:30' else '3' }})<br>
-                            <span style="font-size: 12px; color: #c00;">예약 마감</span>
-                        </button>
-                    {% else %}
-                        {% if display_time >= '12:30' %}
-                            <button type="button" class="slot" onclick="openModal('{{ time_text }}')">
-                                {{ display_time }} ({{ slot.count }}/6)
+                    <div style="text-align: center;">
+                        {% if slot.full %}
+                            <button class="slot full" disabled>
+                                {{ display_time }} ({{ slot.count }}/{{ '6' if display_time >= '12:30' else '3' }})<br>
+                                <span style="font-size: 12px; color: #c00;">예약 마감</span>
                             </button>
                         {% else %}
-                            <button class="slot" name="timeslot" value="{{ time_text }}" type="submit">
-                                {{ display_time }} ({{ slot.count }}/3)
+                            <button type="button" class="slot" onclick="openModal('{{ time_text }}')">
+                                {{ display_time }} ({{ slot.count }}/{{ '6' if display_time >= '12:30' else '3' }})
                             </button>
                         {% endif %}
-                    {% endif %}
+                    </div>
                 {% endfor %}
             </div>
-
-
-
         </div>
     </form>
 
@@ -79,8 +72,8 @@
                 return;
             }
 
-            const inInfo = timeslotCounts[time]?.in;
-            const outInfo = timeslotCounts[time]?.out;
+            const inInfo = timeslotCounts[time]?.in || { reserved: 0, remaining: 0 };
+            const outInfo = timeslotCounts[time]?.out || { reserved: 0, remaining: 0 };
 
             document.getElementById("modal-name").value = nameValue;
             document.getElementById("modal-time-label").innerText = time.slice(11) + " 시간 예약";
@@ -96,7 +89,7 @@
 
         function setArea(area) {
             const time = selectedTime;
-            const remaining = timeslotCounts[time]?.[area === '안' ? 'in' : 'out'].remaining;
+            const remaining = timeslotCounts[time]?.[area === '안' ? 'in' : 'out']?.remaining || 0;
             if (remaining <= 0) {
                 alert(`${area}쪽 예약이 마감되었습니다.`);
                 return false;

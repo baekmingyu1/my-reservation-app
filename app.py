@@ -92,7 +92,7 @@ def index():
         existing = [r['timeslot'] for r in cur.fetchall()]
 
         has_in = any('(안)' in t for t in existing)
-        has_out = any('(밖)' in t or '(안)' not in t and '(밖)' not in t for t in existing)  # 오전도 밖으로 간주
+        has_out = any('(밖)' in t or ('(안)' not in t and '(밖)' not in t) for t in existing)
         is_in = '(안)' in timeslot
         is_out = '(밖)' in timeslot or ('(안)' not in timeslot and '(밖)' not in timeslot)
 
@@ -119,19 +119,20 @@ def load_slots_with_counts(cur):
     slot_counts = {}
     for t in generate_timeslots():
         if t < '2025-05-25 12:30':
-            cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t,))
-            count = cur.fetchone()['count'] if cur.rowcount else 0
+            cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (밖)",))
+            out_count = cur.fetchone()['count'] if cur.rowcount else 0
             slot_counts[t] = {
-                "in": {"reserved": 0, "remaining": 3},
-                "out": {"reserved": count, "remaining": 3 - count}  # 오전은 밖
+                "in": {"reserved": 0, "remaining": 0},
+                "out": {"reserved": out_count, "remaining": 3 - out_count}
             }
+            total_reserved = out_count
             slots.append({
                 'time': t,
-                'count': count,
-                'full': count >= 3,
-                'remaining': max(0, 3 - count),
+                'count': total_reserved,
+                'full': total_reserved >= 3,
+                'remaining': max(0, 3 - total_reserved),
                 'in': 0,
-                'out': count
+                'out': out_count
             })
         else:
             cur.execute("SELECT COUNT(*) as count FROM reservations WHERE timeslot = %s", (t + " (안)",))
@@ -162,6 +163,7 @@ def load_slots_with_counts(cur):
                 'out': out_count
             })
     return slots, slot_counts
+
 
 # --- 나머지 라우트는 동일 ---
 
