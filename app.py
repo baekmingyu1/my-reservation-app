@@ -152,15 +152,24 @@ def cancel_reservation():
     name = request.form.get('name')
     timeslot = request.form.get('timeslot')
 
+    if not name or not timeslot:
+        return render_template("my.html", message="❌ 이름 또는 시간 정보가 누락되었습니다.", reservations=[])
+
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
+    deleted = cur.rowcount
     conn.commit()
     cur.close()
     conn.close()
 
-    message = f"{name}님의 {timeslot} 예약이 취소되었습니다."
-    return render_template('my.html', message=message, reservations=[])
+    if deleted == 0:
+        message = "❌ 해당 예약 정보를 찾을 수 없습니다."
+    else:
+        message = f"✅ {name}님의 {timeslot} 예약이 취소되었습니다."
+
+    return render_template("my.html", message=message, reservations=[])
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
