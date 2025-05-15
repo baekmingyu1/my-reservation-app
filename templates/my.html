@@ -3,13 +3,15 @@
 
 {% block content %}
     <div class="title">내 예약 확인</div>
-    <form method="post">
-        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required>
-        <button class="input-box" style="width: auto; cursor: pointer;">조회</button>
+    <form method="post" class="name-row">
+        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required style="min-width: 180px;">
+        <button class="input-box" style="width: auto;">조회</button>
     </form>
     {% if reservations %}
         <ul>
-            {% for r in reservations %}<li>{{ r.timeslot }}</li>{% endfor %}
+            {% for r in reservations %}
+                <li>{{ r.timeslot }}</li>
+            {% endfor %}
         </ul>
     {% endif %}
     <a class="action-link" href="/">← 메인으로</a>

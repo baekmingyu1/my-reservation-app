@@ -1,18 +1,15 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}포토존 예약 시스템{% endblock %}</title>
+    <title>{% block title %}예약 시스템{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
 <div class="container">
-    <!-- ✅ 공통 로고 삽입 -->
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="로고" class="logo" />
-
+    <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="logo" />
     {% block content %}{% endblock %}
 </div>
 </body>

@@ -2,144 +2,86 @@
     box-sizing: border-box;
     font-family: Pretendard, sans-serif;
 }
-
 body {
     margin: 0;
     padding: 21px 20px;
     background-color: white;
-    overflow-x: auto;
 }
-
 .container {
     max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 30px;
 }
-
 .logo {
-    max-width: 240px;
+    max-width: 200px;
     height: auto;
-    margin-bottom: -20px;
+    margin-bottom: 10px;
 }
-
 .title {
     font-size: 28px;
     font-weight: 700;
     color: black;
 }
-
-.name-row,
-.actions {
+.name-row, .actions {
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 12px;
 }
-
 .label {
     font-size: 18px;
     font-weight: 700;
     color: #1E1E1E;
-    white-space: nowrap;
-    flex-shrink: 0;
 }
-
 .input-wrapper {
     display: flex;
     align-items: center;
     gap: 5px;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    min-width: 0;
-    flex: 1 1 auto;
+    flex-wrap: wrap;
 }
-
 .input-box {
     width: 100%;
     max-width: 250px;
-    min-width: 0;
     padding: 10px 14px;
     border: 1px solid #757575;
     border-radius: 6px;
     font-size: 16px;
-    flex-shrink: 0;
 }
-
 .slot-section {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
-
 .slots {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 10px;
-    justify-items: center; /* ✅ 버튼 중앙 정렬 */
 }
-
 .slot {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 150px; /* ✅ PC: 고정 너비 */
-    height: 60px; /* ✅ 고정 높이 */
-    padding: 5px 10px;
+    padding: 10px;
     background: #FAFAE0;
     border-radius: 6px;
     border: 1px solid #2C2C2C;
     color: #47608B;
-    font-size: 20px; /* ✅ 크게 보기 좋게 */
+    font-size: 16px;
     font-weight: 700;
     text-align: center;
     cursor: pointer;
-    box-sizing: border-box;
-    word-break: break-word;
-    white-space: normal;
 }
-
 .slot.full {
-    background: #ccc;
+    background: #ddd;
     color: #999;
     cursor: not-allowed;
 }
-
+.message {
+    font-size: 16px;
+    color: #c00;
+}
 .action-link {
-    font-size: 18px;
-    font-weight: 700;
+    margin-top: 20px;
+    display: inline-block;
     text-decoration: underline;
-    color: black;
-    cursor: pointer;
-}
-
-form {
-    display: contents;
-}
-
-@media (max-width: 768px) {
-    .title {
-        font-size: 22px;
-    }
-
-    .label,
-    .action-link {
-        font-size: 16px;
-    }
-
-    .input-box {
-        font-size: 14px;
-    }
-
-    .slot {
-        width: 100%; /* ✅ 모바일은 전체 너비 */
-        height: auto;
-        font-size: 18px;
-        padding: 8px 10px;
-    }
-
-    .form-field {
-        margin-bottom: 10px;
-    }
-
+    font-size: 16px;
+    color: #333;
 }

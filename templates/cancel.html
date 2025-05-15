@@ -3,16 +3,13 @@
 
 {% block content %}
     <div class="title">예약 취소</div>
-    <form method="post">
-        <div class="form-field">
-            <input class="input-box" name="name" placeholder="이름을 입력해주세요" required>
-        </div>
-        <div class="form-field">
-            <input class="input-box" name="timeslot" placeholder="예약 시간 (예: 2025-05-25 10:00)" required>
-        </div>
-        <button class="input-box" style="width: auto; cursor: pointer;">취소</button>
+    <form method="post" class="name-row">
+        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required style="min-width: 180px;">
+        <input class="input-box" name="timeslot" placeholder="예약 시간 (예: 2025-05-25 10:00)" required style="min-width: 280px;">
+        <button class="input-box" style="width: auto;">취소하기</button>
     </form>
-
-    {% if message %}<p>{{ message }}</p>{% endif %}
+    {% if message %}
+        <div class="message">{{ message }}</div>
+    {% endif %}
     <a class="action-link" href="/">← 메인으로</a>
 {% endblock %}

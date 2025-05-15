@@ -1,44 +1,27 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>포토존 순서 예약하기</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-<div class="container">
-    <img src="/static/logo.png" alt="더불어함께교회 로고" class="logo" />
+{% extends "base.html" %}
+{% block title %}포토존 순서 예약하기{% endblock %}
+
+{% block content %}
     <div class="title">포토존 순서 예약하기</div>
-    {% if message %}<p>{{ message }}</p>{% endif %}
-    <form method="post">
-        <div class="name-row">
-            <div class="label">이름 :</div>
-            <div class="input-wrapper">
-                <input class="input-box" name="name" placeholder="가교/결 이름을 입력해주세요." required />
-                <div class="label" style="font-weight: 400;">가교/결</div>
-            </div>
-        </div>
-        <div class="slot-section">
-            <div class="label">시간대 선택 :</div>
-            <div class="slots">
-                {% for slot in timeslots %}
-                    {% if slot.full %}
-                        <div class="slot full">{{ slot.time[11:] }} (3/3)</div>
-                    {% else %}
-                        <button type="submit" name="timeslot" value="{{ slot.time }}" class="slot">
-                            {{ slot.time[11:] }} ({{ slot.count }}/3)
-                        </button>
-                    {% endif %}
-                {% endfor %}
-            </div>
+    <form method="post" class="name-row">
+        <div class="label">이름 :</div>
+        <div class="input-wrapper">
+            <input class="input-box" name="name" placeholder="가교/결 이름을 입력해주세요." required style="min-width: 180px;" />
+            <button class="input-box" style="width: auto;">예약하기</button>
         </div>
     </form>
-    <div class="actions">
-        <a class="action-link" href="/my">내 예약 확인</a>
-        <a class="action-link" href="/cancel">예약 취소</a>
-        <a class="action-link" href="/admin">관리자 보기</a>
+    {% if message %}
+        <div class="message">{{ message }}</div>
+    {% endif %}
+    <div class="slot-section">
+        <div class="label">시간 선택</div>
+        <form method="post" class="slots">
+            {% for s in timeslots %}
+                <button class="slot {% if s.full %}full{% endif %}" name="timeslot" value="{{ s.time }}" type="submit"
+                        {% if s.full %}disabled{% endif %}>
+                    {{ s.time[11:] }} {% if s.full %}(마감){% endif %}
+                </button>
+            {% endfor %}
+        </form>
     </div>
-</div>
-</body>
-</html>
+{% endblock %}
