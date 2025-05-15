@@ -2,6 +2,11 @@
 {% block title %}관리자 예약 확인{% endblock %}
 
 {% block content %}
+    <div style="margin-bottom: 20px;">
+        <a href="#section-in" style="margin-right: 20px;">🔵 안쪽 예약으로 이동</a>
+        <a href="#section-out">🟢 바깥쪽 예약으로 이동</a>
+    </div>
+
     <h2>관리자 예약 현황</h2>
 
     <form method="post">
@@ -26,7 +31,8 @@
 
     <hr>
 
-    <h3>🔵 안쪽 예약</h3>
+    <h3 id="section-in">🔵 안쪽 예약</h3>
+
     {% for time, slots in grouped.items() if '(안)' in time %}
         <table border="1" cellpadding="5" style="margin-bottom: 20px; border-collapse: collapse;">
             <caption style="font-weight: bold; margin-bottom: 5px;">🕒 {{ time }}</caption>
@@ -57,7 +63,8 @@
         </table>
     {% endfor %}
 
-    <h3>🟢 바깥쪽 예약</h3>
+    <h3 id="section-out">🟢 바깥쪽 예약</h3>
+
     {% for time, slots in grouped.items() if '(밖)' in time or '(안)' not in time %}
         <table border="1" cellpadding="5" style="margin-bottom: 20px; border-collapse: collapse;">
             <caption style="font-weight: bold; margin-bottom: 5px;">🕒 {{ time }}</caption>

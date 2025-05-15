@@ -69,16 +69,17 @@
             const nameValue = document.getElementById("nameInput").value.trim();
             if (!nameValue) {
                 alert("이름을 먼저 입력해주세요.");
+                document.getElementById("nameInput").focus();
                 return;
             }
 
-            const displayTime = time.slice(11); // 시간만 추출
+            const displayTime = time.slice(11); // "10:30"
             const isMorning = displayTime < "12:30";
 
             const inInfo = isMorning ? { reserved: 0, remaining: 0 } : (timeslotCounts[time]?.in || { reserved: 0, remaining: 0 });
             const outInfo = timeslotCounts[time]?.out || { reserved: 0, remaining: 0 });
 
-
+            // 모달 내부 정보 설정
             document.getElementById("modal-name").value = nameValue;
             document.getElementById("modal-time-label").innerText = time.slice(11) + " 시간 예약";
 
@@ -88,17 +89,25 @@
             document.getElementById("in-button").disabled = isMorning || inInfo.remaining <= 0;
             document.getElementById("out-button").disabled = outInfo.remaining <= 0;
 
-
             document.getElementById("timeModal").style.display = "flex";
         }
 
         function setArea(area) {
             const time = selectedTime;
+            const displayTime = time.slice(11);
+            const isMorning = displayTime < "12:30";
+
+            if (area === '안' && isMorning) {
+                alert("❌ 오전 시간은 '안쪽' 예약이 불가능합니다.");
+                return false;
+            }
+
             const remaining = timeslotCounts[time]?.[area === '안' ? 'in' : 'out']?.remaining || 0;
             if (remaining <= 0) {
                 alert(`${area}쪽 예약이 마감되었습니다.`);
                 return false;
             }
+
             document.getElementById("modal-timeslot").value = time + ` (${area})`;
             return true;
         }
@@ -113,4 +122,5 @@
             }
         }
     </script>
+
 {% endblock %}

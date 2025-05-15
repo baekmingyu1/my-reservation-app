@@ -106,16 +106,16 @@ def index():
         name = request.form.get('name')
         timeslot = request.form.get('timeslot')
 
-        # 오픈 시간 확인
+        # ✅ 오픈 시간 체크
         cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
         row = cur.fetchone()
         if row:
             open_time = datetime.strptime(row['value'], '%Y-%m-%d %H:%M')
             if datetime.now() < open_time:
-                slots, _ = load_slots_with_counts(cur)
-                return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=slots, timeslot_counts={})
+                slots, slot_counts = load_slots_with_counts(cur)
+                return render_template("index.html", message="⏰ 예약은 아직 오픈되지 않았습니다.", timeslots=slots, timeslot_counts=slot_counts)
 
-        # ✅ 오전 시간에 '(안)' 예약 시도 차단
+        # ✅ 오전 시간 + (안) 구역은 예약 불가
         try:
             raw_dt = timeslot.split(' ')[0] + ' ' + timeslot.split(' ')[1]  # "2025-05-25 10:30"
             slot_time = datetime.strptime(raw_dt, "%Y-%m-%d %H:%M")
@@ -126,7 +126,7 @@ def index():
         except Exception as e:
             print("❗ 시간 파싱 실패:", e)
 
-        # 중복 검사
+        # ✅ 중복 예약 검사
         cur.execute("SELECT timeslot FROM reservations WHERE name = %s", (name,))
         existing = [r['timeslot'] for r in cur.fetchall()]
         has_in = any('(안)' in t for t in existing)
@@ -149,6 +149,7 @@ def index():
             else:
                 message = "해당 시간대는 예약이 마감되었습니다."
 
+    # ✅ 시간대 목록 렌더링
     slots, slot_counts = load_slots_with_counts(cur)
     cur.close()
     conn.close()
