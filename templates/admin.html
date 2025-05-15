@@ -1,18 +1,104 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>관리자 - 예약 현황</title>
     <style>
-        * { box-sizing: border-box; font-family: Pretendard, sans-serif; }
-        body { margin: 0; padding: 21px 35px; background-color: white; }
-        .container { max-width: 1440px; display: flex; flex-direction: column; gap: 30px; }
-        .title { font-size: 36px; font-weight: 700; }
-        table { width: 100%; border-collapse: collapse; font-size: 18px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f5f5f5; }
-        .logout { font-size: 16px; text-decoration: underline; color: #555; margin-bottom: 10px; }
+        * {
+            box-sizing: border-box;
+            font-family: Pretendard, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 21px 35px;
+            background-color: white;
+        }
+
+        .container {
+            max-width: 1440px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 18px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        .logout {
+            font-size: 16px;
+            text-decoration: underline;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+                gap: 20px;
+            }
+
+            .title {
+                font-size: 24px;
+                line-height: 1.3;
+            }
+
+            .label, .action-link {
+                font-size: 18px;
+            }
+
+            .input-box {
+                width: 100% !important;
+                max-width: 100% !important;
+                font-size: 14px;
+            }
+
+            .slot {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            .slots {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+
+            .logo {
+                max-width: 160px;
+            }
+
+            .name-row, .actions {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -20,9 +106,15 @@
     <div class="title">전체 예약 현황</div>
     <a class="logout" href="/logout">로그아웃</a>
     <table>
-        <tr><th>시간대</th><th>예약자 목록</th></tr>
+        <tr>
+            <th>시간대</th>
+            <th>예약자 목록</th>
+        </tr>
         {% for time, users in grouped.items() %}
-            <tr><td>{{ time }}</td><td>{{ users|join(', ') }}</td></tr>
+            <tr>
+                <td>{{ time }}</td>
+                <td>{{ users|join(', ') }}</td>
+            </tr>
         {% endfor %}
     </table>
     <a class="action-link" href="/">← 메인으로</a>
