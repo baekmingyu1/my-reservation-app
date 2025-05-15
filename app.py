@@ -164,3 +164,144 @@ def load_slots_with_counts(cur):
     return slots, slot_counts
 
 # --- 나머지 라우트는 동일 ---
+
+
+# --- 내 예약 확인 ---
+@app.route('/my', methods=['GET', 'POST'])
+def my():
+    name = request.form.get('name') if request.method == 'POST' else None
+    reservations = []
+    if name:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM reservations WHERE name = %s ORDER BY created_at", (name,))
+        reservations = cur.fetchall()
+        cur.close()
+        conn.close()
+    return render_template("my.html", name=name, reservations=reservations)
+
+@app.route('/cancel_reservation', methods=['POST'])
+def cancel_reservation():
+    name = request.form.get('name')
+    timeslot = request.form.get('timeslot')
+
+    message = ""
+    reservations = []
+
+    if name and timeslot:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
+        deleted = cur.rowcount
+        conn.commit()
+        cur.execute("SELECT * FROM reservations WHERE name = %s ORDER BY created_at", (name,))
+        reservations = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        message = f"✅ {timeslot} 예약이 취소되었습니다." if deleted else "❌ 예약을 찾을 수 없습니다."
+    else:
+        message = "❌ 이름 또는 시간 정보가 누락되었습니다."
+
+    return render_template("my.html", name=name, message=message, reservations=reservations)
+
+# --- 관리자 ---
+from collections import defaultdict
+
+@app.route("/admin", methods=["GET", "POST"])
+@admin_required
+def admin():
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    if request.method == "POST":
+        cur.execute("UPDATE reservations SET used = FALSE")
+        used_ids = request.form.getlist("used_ids")
+        if used_ids:
+            cur.execute("UPDATE reservations SET used = TRUE WHERE id = ANY(%s)", (used_ids,))
+        conn.commit()
+
+    cur.execute("SELECT * FROM reservations ORDER BY timeslot, created_at")
+    reservations = cur.fetchall()
+
+    grouped = defaultdict(list)
+    for r in reservations:
+        grouped[r["timeslot"]].append(r)
+
+    cur.execute("SELECT value FROM settings WHERE key = 'open_time'")
+    row = cur.fetchone()
+    open_time = row["value"] if row else "설정 안 됨"
+
+    cur.close()
+    conn.close()
+
+    return render_template("admin.html", grouped=grouped, open_time=open_time)
+
+@app.route("/admin/delete_reservation", methods=["POST"])
+@admin_required
+def delete_reservation():
+    reservation_id = request.form.get("reservation_id")
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM reservations WHERE id = %s", (reservation_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect("/admin")
+
+@app.route("/admin/set_open_time", methods=["POST"])
+@admin_required
+def set_open_time():
+    open_time = request.form.get("open_time")
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+                INSERT INTO settings (key, value)
+                VALUES ('open_time', %s)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                """, (open_time,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect("/admin")
+
+@app.route("/admin/add_reservation", methods=["POST"])
+@admin_required
+def add_reservation():
+    name = request.form.get("name")
+    timeslot = request.form.get("timeslot")
+    if name and timeslot:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
+        count = cur.fetchone()[0]
+        if count < 3:
+            cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
+            conn.commit()
+        cur.close()
+        conn.close()
+    return redirect("/admin")
+
+# --- 로그인 / 로그아웃 ---
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == 'admin' and password == ADMIN_PASSWORD:
+            session['admin'] = True
+            return redirect('/admin')
+        else:
+            error = "아이디 또는 비밀번호가 틀렸습니다."
+    return render_template("login.html", error=error)
+
+@app.route("/logout")
+def logout():
+    session.pop("admin", None)
+    return redirect("/")
+
+# --- Run ---
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
