@@ -27,6 +27,14 @@
             margin-left: 8px;
             font-size: 16px;
         }
+        .delete-btn {
+            color: red;
+            font-size: 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-left: 6px;
+        }
     </style>
 {% endblock %}
 
@@ -46,7 +54,12 @@
                             <label class="complete-checkbox">
                                 <input type="checkbox" name="used_ids" value="{{ user.id }}" {% if user.used %}checked{% endif %}>
                                 완료
-                            </label><br>
+                            </label>
+                            <form method="post" action="/admin/delete_reservation" style="display:inline;">
+                                <input type="hidden" name="reservation_id" value="{{ user.id }}">
+                                <button type="submit" class="delete-btn">❌</button>
+                            </form>
+                            <br>
                         {% endfor %}
                     </td>
                 </tr>
@@ -61,6 +74,22 @@
     <form method="post" action="/admin/set_open_time">
         <input class="input-box" type="text" name="open_time" placeholder="예: 2025-05-25 09:00" required />
         <button class="input-box" style="width: auto;">저장</button>
+    </form>
+
+    <hr>
+    <div class="title">관리자 직접 예약 등록</div>
+    <form method="post" action="/admin/add_reservation" class="name-row" style="margin-bottom: 20px;">
+        <div class="input-wrapper">
+            <input class="input-box" type="text" name="name" placeholder="이름 입력" required>
+        </div>
+        <div class="input-wrapper">
+            <select class="input-box" name="timeslot" required>
+                {% for t in timeslots %}
+                    <option value="{{ t }}">{{ t[11:] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="input-box" style="width: auto;">예약 등록</button>
     </form>
 
     <a class="action-link" href="/">← 메인으로</a>

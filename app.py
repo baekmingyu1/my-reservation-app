@@ -224,6 +224,46 @@ def set_open_time():
     conn.close()
     return redirect('/admin')
 
+# 관리자 예약 삭제
+@app.route('/admin/delete_reservation', methods=['POST'])
+@login_required
+def delete_reservation():
+    reservation_id = request.form.get('reservation_id')
+    if reservation_id:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("DELETE FROM reservations WHERE id = %s", (reservation_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+    return redirect('/admin')
+
+# 관리자 전용 예약
+@app.route('/admin/add_reservation', methods=['POST'])
+@login_required
+def admin_add_reservation():
+    name = request.form.get('name')
+    timeslot = request.form.get('timeslot')
+
+    if not name or not timeslot:
+        return redirect('/admin')
+
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+
+    # 이미 해당 이름이 등록되어 있으면 막기
+    cur.execute("SELECT COUNT(*) FROM reservations WHERE name = %s", (name,))
+    if cur.fetchone()[0] == 0:
+        cur.execute("SELECT COUNT(*) FROM reservations WHERE timeslot = %s", (timeslot,))
+        if cur.fetchone()[0] < 3:
+            cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
+            conn.commit()
+
+    cur.close()
+    conn.close()
+    return redirect('/admin')
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
