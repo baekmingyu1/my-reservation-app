@@ -85,13 +85,10 @@ def generate_timeslots():
         # 점심시간 제외
         if datetime(2025, 5, 25, 11, 0) <= t < datetime(2025, 5, 25, 12, 30):
             continue
-        # 12:30 이후는 안/밖 두 구역 생성
-        elif t >= datetime(2025, 5, 25, 12, 30):
-            times.append(t.strftime('%Y-%m-%d %H:%M') + ' (안)')
-            times.append(t.strftime('%Y-%m-%d %H:%M') + ' (밖)')
-        else:
-            times.append(t.strftime('%Y-%m-%d %H:%M'))
+        # 12:30 이후도 한 번만 추가
+        times.append(t.strftime('%Y-%m-%d %H:%M'))
     return times
+
 
 def admin_required(f):
     @wraps(f)
