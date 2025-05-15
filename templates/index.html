@@ -25,15 +25,13 @@
                     {% set display_time = time_text[11:] %}
                     {% if slot.full %}
                         <button class="slot full" disabled>
-                            {{ display_time }}<br>
-                            안({{ slot.in }}/3) / 밖({{ slot.out }}/3)<br>
+                            {{ display_time }} ({{ slot.count }}/{{ '6' if display_time >= '12:30' else '3' }})<br>
                             <span style="font-size: 12px; color: #c00;">예약 마감</span>
                         </button>
                     {% else %}
-                        {% if "12:30" <= display_time %}
+                        {% if display_time >= '12:30' %}
                             <button type="button" class="slot" onclick="openModal('{{ time_text }}')">
-                                {{ display_time }}<br>
-                                안({{ slot.in }}/3) / 밖({{ slot.out }}/3)
+                                {{ display_time }} ({{ slot.count }}/6)
                             </button>
                         {% else %}
                             <button class="slot" name="timeslot" value="{{ time_text }}" type="submit">
@@ -43,6 +41,7 @@
                     {% endif %}
                 {% endfor %}
             </div>
+
 
 
         </div>
