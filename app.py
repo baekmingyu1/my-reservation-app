@@ -90,13 +90,16 @@ def generate_timeslots():
     return times
 
 
+from functools import wraps
+
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if session.get("admin") != True:
-            return redirect(url_for("login"))
+        if session.get('admin') != True:
+            return redirect('/login')
         return f(*args, **kwargs)
     return decorated
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -204,12 +207,16 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+
+        # 관리자 계정 확인 (직접 설정)
         if username == 'admin' and password == 'your-password':
             session['admin'] = True
             return redirect('/admin')
         else:
             error = "아이디 또는 비밀번호가 틀렸습니다."
+
     return render_template('login.html', error=error)
+
 
 
 @app.route('/logout')
