@@ -250,30 +250,6 @@ def cancel_reservation():
 
     return render_template("my.html", name=name, message=message, reservations=reservations)
 
-
-@app.route('/cancel_reservation', methods=['POST'])
-def cancel_reservation():
-    name = request.form.get('name')
-    timeslot = request.form.get('timeslot')
-    message = ""
-    reservations = []
-
-    if name and timeslot:
-        conn = get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
-        deleted = cur.rowcount
-        conn.commit()
-        cur.execute("SELECT * FROM reservations WHERE name = %s ORDER BY created_at", (name,))
-        reservations = cur.fetchall()
-        cur.close()
-        conn.close()
-        message = f"✅ {timeslot} 예약이 취소되었습니다." if deleted else "❌ 예약을 찾을 수 없습니다."
-    else:
-        message = "❌ 이름 또는 시간 정보가 누락되었습니다."
-
-    return render_template("my.html", name=name, message=message, reservations=reservations)
-
 @app.route("/admin", methods=["GET", "POST"])
 @admin_required
 def admin():
