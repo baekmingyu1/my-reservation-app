@@ -47,16 +47,14 @@
                     <td>{{ r.name }}</td>
                     <td>{{ r.order_in_slot }}</td>
                     <td>
-                        <form method="post" action="/admin/toggle_used" style="display:inline;">
-                            <input type="hidden" name="id" value="{{ r.id }}">
-                            <button>{{ "✅" if r.used else "❌" }}</button>
-                        </form>
+                        <button type="button" onclick="toggleUsed({{ r.id }}, this)">
+                            {{ "✅" if r.used else "❌" }}
+                        </button>
+
                     </td>
                     <td>
-                        <form method="post" action="/admin/delete_reservation" style="display:inline;">
-                            <input type="hidden" name="reservation_id" value="{{ r.id }}">
-                            <button type="submit">삭제</button>
-                        </form>
+                        <button type="button" onclick="deleteReservation({{ r.id }}, this)">삭제</button>
+
                     </td>
                 </tr>
             {% endfor %}
@@ -95,9 +93,7 @@
         function toggleUsed(id, btn) {
             fetch("/admin/toggle_used", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: `id=${id}`
             }).then(res => {
                 if (res.ok) {
@@ -105,9 +101,6 @@
                 } else {
                     alert("상태 변경 실패");
                 }
-            }).catch(err => {
-                console.error("Toggle error:", err);
-                alert("오류 발생");
             });
         }
 
@@ -115,9 +108,7 @@
             if (!confirm("정말 삭제하시겠습니까?")) return;
             fetch("/admin/delete_reservation", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: `reservation_id=${id}`
             }).then(res => {
                 if (res.ok) {
@@ -126,12 +117,10 @@
                 } else {
                     alert("삭제 실패");
                 }
-            }).catch(err => {
-                console.error("Delete error:", err);
-                alert("오류 발생");
             });
         }
     </script>
+
 
     <a class="action-link" href="/">← 메인으로</a>
 {% endblock %}
