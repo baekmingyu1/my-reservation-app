@@ -13,17 +13,7 @@
             <label>이름:</label>
             <input name="admin_name" placeholder="이름 입력">
             <label>시간:</label>
-            <select name="admin_time">
-                {% for s in timeslots %}
-                    {% set is_morning = s.time < '2025-05-25 12:30' %}
-                    {% if is_morning %}
-                        <option value="{{ s.time }} (밖)">{{ s.time }} (밖)</option>
-                    {% else %}
-                        <option value="{{ s.time }} (안)">{{ s.time }} (안)</option>
-                        <option value="{{ s.time }} (밖)">{{ s.time }} (밖)</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
+            <input name="admin_time" placeholder="예: 2025-05-25 10:30 (안)">
             <button type="submit" name="action" value="add_reservation">예약 추가</button>
         </div>
         <div>
@@ -52,9 +42,9 @@
                     </form>
                 </td>
                 <td>
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="id" value="{{ r.id }}">
-                        <button name="action" value="delete">삭제</button>
+                    <form method="post" action="/admin/delete_reservation" style="display:inline;">
+                        <input type="hidden" name="reservation_id" value="{{ r.id }}">
+                        <button type="submit">삭제</button>
                     </form>
                 </td>
             </tr>
@@ -82,9 +72,9 @@
                     </form>
                 </td>
                 <td>
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="id" value="{{ r.id }}">
-                        <button name="action" value="delete">삭제</button>
+                    <form method="post" action="/admin/delete_reservation" style="display:inline;">
+                        <input type="hidden" name="reservation_id" value="{{ r.id }}">
+                        <button type="submit">삭제</button>
                     </form>
                 </td>
             </tr>
