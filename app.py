@@ -132,20 +132,36 @@ def my_reservations():
         conn.close()
     return render_template('my.html', reservations=reservations)
 
-@app.route('/cancel', methods=['GET', 'POST'])
-def cancel():
-    message = None
-    if request.method == 'POST':
-        name = request.form.get('name')
-        timeslot = request.form.get('timeslot')
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
-        cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
-        conn.commit()
-        cur.close()
-        conn.close()
-        message = f"{name}님의 {timeslot} 예약이 취소되었습니다."
-    return render_template('cancel.html', message=message)
+# @app.route('/cancel', methods=['GET', 'POST'])
+# def cancel():
+#     message = None
+#     if request.method == 'POST':
+#         name = request.form.get('name')
+#         timeslot = request.form.get('timeslot')
+#         conn = psycopg2.connect(DATABASE_URL)
+#         cur = conn.cursor()
+#         cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
+#         conn.commit()
+#         cur.close()
+#         conn.close()
+#         message = f"{name}님의 {timeslot} 예약이 취소되었습니다."
+#     return render_template('cancel.html', message=message)
+
+@app.route('/cancel_reservation', methods=['POST'])
+def cancel_reservation():
+    name = request.form.get('name')
+    timeslot = request.form.get('timeslot')
+
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM reservations WHERE name = %s AND timeslot = %s", (name, timeslot))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    message = f"{name}님의 {timeslot} 예약이 취소되었습니다."
+    return render_template('my.html', message=message, reservations=[])
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
