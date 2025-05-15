@@ -1,19 +1,28 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>예약 취소</title>
+    <style>
+        * { box-sizing: border-box; font-family: Pretendard, sans-serif; }
+        body { margin: 0; padding: 21px 35px; background-color: white; }
+        .container { max-width: 1440px; display: flex; flex-direction: column; gap: 30px; }
+        .title { font-size: 36px; font-weight: 700; }
+        .label, .action-link { font-size: 24px; font-weight: 700; color: black; }
+        .input-box { width: 300px; padding: 12px 16px; border: 1px solid #757575; border-radius: 8px; font-size: 16px; }
+    </style>
 </head>
 <body>
-<h2>예약 취소</h2>
-<form method="post">
-    이름: <input type="text" name="name" required><br>
-    시간대: <input type="text" name="timeslot" required><br>
-    <button type="submit">취소하기</button>
-</form>
-{% if message %}
-    <p>{{ message }}</p>
-{% endif %}
-<a href="/">← 메인으로</a>
+<div class="container">
+    <div class="title">예약 취소</div>
+    <form method="post">
+        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required><br>
+        <input class="input-box" name="timeslot" placeholder="예약 시간 (예: 2025-05-25 10:00)" required><br>
+        <button class="input-box" style="width: auto; cursor: pointer;">취소</button>
+    </form>
+    {% if message %}<p>{{ message }}</p>{% endif %}
+    <a class="action-link" href="/">← 메인으로</a>
+</div>
 </body>
 </html>

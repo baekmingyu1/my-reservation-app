@@ -3,12 +3,16 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+load_dotenv()
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "default-secret")
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # DB 초기화
+
 def init_db():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     cur = conn.cursor()
@@ -27,19 +31,18 @@ def init_db():
 init_db()
 
 # 시간대 생성 함수 (11:00~12:30 제외)
+
 def generate_timeslots():
     base_time = datetime(2025, 5, 25, 10, 0)
-    slots = []
-    for i in range(60):
-        current = base_time + timedelta(minutes=5 * i)
-        if not (datetime(2025, 5, 25, 11, 0) <= current < datetime(2025, 5, 25, 12, 30)):
-            slots.append(current.strftime('%Y-%m-%d %H:%M'))
-    return slots
+    all_slots = [(base_time + timedelta(minutes=5 * i)) for i in range(60)]
+    filtered_slots = [t for t in all_slots if not (datetime(2025, 5, 25, 11, 0) <= t < datetime(2025, 5, 25, 12, 30))]
+    return [t.strftime('%Y-%m-%d %H:%M') for t in filtered_slots]
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     cur = conn.cursor()
+    message = None
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -50,6 +53,11 @@ def index():
             if cur.fetchone()['count'] < 3:
                 cur.execute("INSERT INTO reservations (name, timeslot) VALUES (%s, %s)", (name, timeslot))
                 conn.commit()
+                message = f"{name}님, {timeslot} 예약이 완료되었습니다."
+            else:
+                message = "해당 시간대는 예약이 마감되었습니다."
+        else:
+            message = "이미 예약한 이름입니다."
 
     timeslots = generate_timeslots()
     slot_status = []
@@ -61,7 +69,7 @@ def index():
 
     cur.close()
     conn.close()
-    return render_template('index.html', timeslots=slot_status)
+    return render_template('index.html', timeslots=slot_status, message=message)
 
 @app.route('/my', methods=['GET', 'POST'])
 def my():
@@ -98,11 +106,14 @@ def admin():
         return redirect(url_for("login"))
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     cur = conn.cursor()
-    cur.execute("SELECT timeslot, COUNT(*) as count, string_agg(name, ', ') as names FROM reservations GROUP BY timeslot ORDER BY timeslot")
+    cur.execute("SELECT name, timeslot FROM reservations ORDER BY timeslot")
     reservations = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('admin.html', reservations=reservations)
+    grouped = {}
+    for r in reservations:
+        grouped.setdefault(r['timeslot'], []).append(r['name'])
+    return render_template('admin.html', grouped=grouped)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

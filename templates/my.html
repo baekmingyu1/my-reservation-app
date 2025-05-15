@@ -1,22 +1,32 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>내 예약</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>내 예약 확인</title>
+    <style>
+        * { box-sizing: border-box; font-family: Pretendard, sans-serif; }
+        body { margin: 0; padding: 21px 35px; background-color: white; }
+        .container { max-width: 1440px; display: flex; flex-direction: column; gap: 30px; }
+        .title { font-size: 36px; font-weight: 700; }
+        .label, .action-link { font-size: 24px; font-weight: 700; color: black; }
+        .input-box { width: 300px; padding: 12px 16px; border: 1px solid #757575; border-radius: 8px; font-size: 16px; }
+        ul { padding-left: 20px; font-size: 20px; }
+    </style>
 </head>
 <body>
-<h2>내 예약 확인</h2>
-<form method="post">
-    이름: <input type="text" name="name" required>
-    <button type="submit">조회</button>
-</form>
-{% if reservations %}
-    <ul>
-        {% for r in reservations %}
-            <li>{{ r.timeslot }} - 예약 시간</li>
-        {% endfor %}
-    </ul>
-{% endif %}
-<a href="/">← 메인으로</a>
+<div class="container">
+    <div class="title">내 예약 확인</div>
+    <form method="post">
+        <input class="input-box" name="name" placeholder="이름을 입력해주세요" required>
+        <button class="input-box" style="width: auto; cursor: pointer;">조회</button>
+    </form>
+    {% if reservations %}
+        <ul>
+            {% for r in reservations %}<li>{{ r.timeslot }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+    <a class="action-link" href="/">← 메인으로</a>
+</div>
 </body>
 </html>
